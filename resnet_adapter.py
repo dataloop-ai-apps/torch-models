@@ -393,7 +393,7 @@ def _get_imagenet_label_json():
     return list(labels.values())
 
 
-def package_creation(project: dl.Project):
+def package_creation():
     metadata = dl.Package.get_ml_metadata(cls=ModelAdapter,
                                           default_configuration={'weights_filename': 'model.pth',
                                                                  'input_size': 256},
@@ -416,25 +416,10 @@ def package_creation(project: dl.Project):
                                                                             max_replicas=1),
                                                                         concurrency=1).to_json()},
                                     metadata=metadata)
-    # package.metadata = {'system': {'ml': {'defaultConfiguration': {'weights_filename': 'model.pth',
-    #                                                                'input_size': 256},
-    #                                       'outputType': dl.AnnotationType.CLASSIFICATION,
-    #                                       'tags': ['torch'], }}}
-    # package = package.update()
-    s = package.services.list().items[0]
-    s.package_revision = package.version
-    s.versions['dtlpy'] = '1.63.2'
-    s.update(True)
     return package
 
 
 def model_creation(package: dl.Package, resnet_ver='50'):
-    # bucket = dl.buckets.create(dl.BucketType.GCS,
-    #                            gcs_project_name='viewo-main',
-    #                            gcs_bucket_name='model-mgmt-snapshots',
-    #                            gcs_prefix='ResNet{}'.format(resnet_ver))
-    # artifact = dl.LocalArtifact(path=os.getcwd())
-
     model = package.models.create(model_name='pretrained-resnet{}'.format(resnet_ver),
                                   description='resnset{} pretrained on imagenet'.format(resnet_ver),
                                   tags=['pretrained', 'imagenet'],
@@ -451,7 +436,6 @@ def model_creation(package: dl.Package, resnet_ver='50'):
                                   project_id=project.id,
                                   labels=_get_imagenet_label_json(),
                                   )
-    # artifact = model.artifacts.upload(filepath=r"C:\Users\Shabtay\Downloads\New folder\*")
     return model
 
 

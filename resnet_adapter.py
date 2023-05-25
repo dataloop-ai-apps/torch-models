@@ -338,10 +338,15 @@ class ModelAdapter(dl.BaseModelAdapter):
         :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
         """
         input_size = self.configuration.get('input_size', 256)
+
+        def gray_to_rgb(x):
+            return x.convert('RGB')
+
         preprocess = torchvision.transforms.Compose(
             [
                 torchvision.transforms.ToPILImage(),
-                torchvision.transforms.Resize(input_size),
+                torchvision.transforms.Resize((input_size, input_size)),
+                gray_to_rgb,
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # [-1, 1]
             ]

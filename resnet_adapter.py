@@ -90,6 +90,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             return x.convert('RGB')
 
         data_transforms = {
+
             'train': [
                 iaa.Resize({"height": input_size, "width": input_size}),
                 iaa.flip.Fliplr(p=0.5),
@@ -414,7 +415,7 @@ def package_creation():
                                                             git_tag='main'),
                                     modules=[module],
                                     service_config={
-                                        'runtime': dl.KubernetesRuntime(pod_type=dl.INSTANCE_CATALOG_GPU_K80_S,
+                                        'runtime': dl.KubernetesRuntime(pod_type=dl.INSTANCE_CATALOG_REGULAR_S,
                                                                         runner_image='gcr.io/viewo-g/modelmgmt/resnet:0.0.7',
                                                                         autoscaler=dl.KubernetesRabbitmqAutoscaler(
                                                                             min_replicas=0,
@@ -432,7 +433,7 @@ def model_creation(package: dl.Package, resnet_ver='50'):
                                   scope='public',
                                   # scope='project',
                                   model_artifacts=[dl.LinkArtifact(
-                                      url='https://storage.googleapis.com/model-mgmt-snapshots/ResNet50/model.pth',
+                                      url=f'https://storage.googleapis.com/model-mgmt-snapshots/ResNet{resnet_ver}/model.pth',
                                       filename='model.pth')],
                                   status='trained',
                                   configuration={'weights_filename': 'model.pth',
@@ -445,10 +446,10 @@ def model_creation(package: dl.Package, resnet_ver='50'):
 
 
 if __name__ == "__main__":
-    env = 'rc'
+    env = 'prod'
     project_name = 'DataloopModels'
     dl.setenv(env)
     project = dl.projects.get(project_name)
-    # package = project.packages.get('resnet')
+    package = project.packages.get('resnet')
     # package.artifacts.list()
     # model_creation(package=package)

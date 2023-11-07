@@ -416,7 +416,7 @@ def package_creation():
                                     modules=[module],
                                     service_config={
                                         'runtime': dl.KubernetesRuntime(pod_type=dl.INSTANCE_CATALOG_REGULAR_S,
-                                                                        runner_image='gcr.io/viewo-g/modelmgmt/resnet:0.0.7',
+                                                                        runner_image='gcr.io/viewo-g/modelmgmt/resnet:0.0.8',
                                                                         autoscaler=dl.KubernetesRabbitmqAutoscaler(
                                                                             min_replicas=0,
                                                                             max_replicas=1),
@@ -446,10 +446,10 @@ def model_creation(package: dl.Package, resnet_ver='50'):
 
 
 if __name__ == "__main__":
-    env = 'prod'
+    env = 'rc'
     project_name = 'DataloopModels'
     dl.setenv(env)
     project = dl.projects.get(project_name)
-    package = project.packages.get('resnet')
+    # package = project.packages.get('resnet')
     # package.artifacts.list()
     # model_creation(package=package)

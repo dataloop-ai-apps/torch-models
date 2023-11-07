@@ -4,68 +4,47 @@ These are pytorch model adapters examples.
 
 1. ResNet50 (resnet_adapter.py)
 
-Full Model Management documentation [here](https://dataloop.ai/docs).  
-Jupyter notebooks with examples on inference and training [here](https://github.com/dataloop-ai/dtlpy-documentation/blob/main/tutorials/model_management/use_dataloop_zoo_models/classification/chapter.ipynb)
+Full Model Management documentation [here](https://dataloop.ai/docs).
+Developers Documentation is [here](https://developers.dataloop.ai/tutorials/model_management/).  
 
-## Deployment
+## Clone Model to a Project
+You can clone the pretrained model to your project to work as-is.
+First get all the public model:
 
-Add the model to your project:
-
-```
-import json
+```python
 import dtlpy as dl
+filters = dl.Filters(resource=dl.FILTERS_RESOURCE_MODEL)
+filters.add(field='scope', values='public')
 
-project_name = 'My Model'
-project = dl.projects.get(project_name=project_name)
-
-codebase = dl.GitCodebase(git_url='https://github.com/dataloop-ai/pytorch_adapters',
-                          git_tag='master')
-
-model = project.models.create(model_name='ResNet',
-                              description='Dataloop ResNet implemented in pytorch',
-                              output_type=dl.AnnotationType.CLASSIFICATION,
-                              codebase=codebase,
-                              tags=['torch'],
-                              default_configuration={
-                                  'weights_filename': 'model.pth',
-                                  'input_size': 256,
-                              },
-                              default_runtime=dl.KubernetesRuntime(),
-                              entry_point='resnet_adapter.py')
+dl.models.list(filters=filters).print()
 ```
 
-Create the pretrained snapshot (ImageNet):
-
-```
-project = dl.projects.get(project_name)
-
-resnet_ver = '50'  # 18 etc..
-bucket = dl.buckets.create(dl.BucketType.GCS,
-                           gcs_project_name='viewo-main',
-                           gcs_bucket_name='model-mgmt-snapshots',
-                           gcs_prefix='ResNet{}'.format(resnet_ver))
-
-# load the imagenet label mapping into the snapshot definitions
-
-with open('imagenet_labels.json', 'r') as f:
-    labels = json.load(f)
-
-snapshot = model.snapshots.create(snapshot_name='pretrained-resnet{}'.format(resnet_ver),
-                                  description='resnet{} pretrained on imagenet'.format(resnet_ver),
-                                  tags=['pretrained', 'imagenet'],
-                                  dataset_id=None,
-                                  status='trained',
-                                  configuration={'weights_filename': 'model.pth',
-                                                 'id_to_label_map': labels,
-                                  project_id=project.id,
-                                  bucket=bucket,
-                                  labels=list(labels.values())
-                                  )
+Select the pretrained model you want to clone and... clone:
+```python
+import dtlpy as dl
+public_model = dl.models.get(model_id='646dae2b6cd40e80856fe0f1')
+project = dl.projects.get('My Project')
+model = project.models.clone(from_model=public_model,
+                             model_name='my_pretrained_resnet_50',
+                             project_id=project.id)
 ```
 
-## Clone and Edit
+## Finetune
+If you want to finetune the model, you'll need to connect your dataset and train:
+```python
+dataset = project.datasets.get('Capybaras')
+train_filter = dl.Filters(field='dir', values='/train')
+validation_filter = dl.Filters(field='dir', values='/validation')
+custom_model = project.models.clone(from_model=public_model,
+                                    model_name='finetuning_mode',
+                                    dataset=dataset,
+                                    project_id=project.id,
+                                    train_filter=train_filter,
+                                    validation_filter=validation_filter)
+```
 
-Fork this repo to change and add your special touch into the model code.
+Now you have a new model connected to your capybara dataset, and you can initiate a training execution.
+More information [here](https://developers.dataloop.ai/tutorials/model_management/ai_library/chapter/#train)
 
 ## Contributions
 

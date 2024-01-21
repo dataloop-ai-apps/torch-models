@@ -385,71 +385,8 @@ class ModelAdapter(dl.BaseModelAdapter):
         ...
 
 
-def train():
-    adapter = ModelAdapter()
-    model = dl.models.get(model_id='63231d9982533076a48c685d')
-    adapter.load_from_model(model)
-    adapter.train_model(model)
-
-
 def _get_imagenet_label_json():
     import json
     with open('imagenet_labels.json', 'r') as fh:
         labels = json.load(fh)
     return list(labels.values())
-
-
-def package_creation():
-    metadata = dl.Package.get_ml_metadata(cls=ModelAdapter,
-                                          default_configuration={'weights_filename': 'model.pth',
-                                                                 'input_size': 256},
-                                          output_type=dl.AnnotationType.CLASSIFICATION,
-                                          )
-    module = dl.PackageModule.from_entry_point(entry_point='resnet_adapter.py')
-    package = project.packages.push(package_name='resnet',
-                                    src_path=os.getcwd(),
-                                    # description='Global Dataloop ResNet implemented in pytorch',
-                                    is_global=True,
-                                    package_type='ml',
-                                    codebase=dl.GitCodebase(git_url='https://github.com/dataloop-ai-apps/torch-models',
-                                                            git_tag='main'),
-                                    modules=[module],
-                                    service_config={
-                                        'runtime': dl.KubernetesRuntime(pod_type=dl.INSTANCE_CATALOG_REGULAR_S,
-                                                                        runner_image='gcr.io/viewo-g/modelmgmt/resnet:0.0.8',
-                                                                        autoscaler=dl.KubernetesRabbitmqAutoscaler(
-                                                                            min_replicas=0,
-                                                                            max_replicas=1),
-                                                                        concurrency=1).to_json()},
-                                    metadata=metadata)
-    return package
-
-
-def model_creation(package: dl.Package, resnet_ver='50'):
-    model = package.models.create(model_name='pretrained-resnet{}'.format(resnet_ver),
-                                  description='resnset{} pretrained on imagenet'.format(resnet_ver),
-                                  tags=['pretrained', 'imagenet'],
-                                  dataset_id=None,
-                                  scope='public',
-                                  # scope='project',
-                                  model_artifacts=[dl.LinkArtifact(
-                                      url=f'https://storage.googleapis.com/model-mgmt-snapshots/ResNet{resnet_ver}/model.pth',
-                                      filename='model.pth')],
-                                  status='trained',
-                                  configuration={'weights_filename': 'model.pth',
-                                                 'batch_size': 16,
-                                                 'num_epochs': 10},
-                                  project_id=project.id,
-                                  labels=_get_imagenet_label_json(),
-                                  )
-    return model
-
-
-if __name__ == "__main__":
-    env = 'rc'
-    project_name = 'DataloopModels'
-    dl.setenv(env)
-    project = dl.projects.get(project_name)
-    # package = project.packages.get('resnet')
-    # package.artifacts.list()
-    # model_creation(package=package)

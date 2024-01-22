@@ -1,6 +1,6 @@
 # Torch Dataloop Model Adapters
 
-These are pytorch model adapters examples.
+These are pytorch model adapters.
 
 1. ResNet50 (resnet_adapter.py)
 

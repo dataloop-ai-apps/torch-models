@@ -423,12 +423,12 @@ class ModelAdapter(dl.BaseModelAdapter):
             buffer = BytesIO()
             buffer.write(json.dumps({}, default=lambda x: None).encode())
             buffer.seek(0)
-            buffer.name = "clip_feature_set.json"
+            buffer.name = f"{self.model_entity.name}_feature_set.json"
             feature_set_item = binaries.items.upload(
                 local_path=buffer,
                 item_metadata={
                     "system": {
-                        "clip_feature_set_id": feature_set.id
+                        f"{self.model_entity.name}_feature_set_id": feature_set.id
                         }
                     }
                 )
@@ -436,27 +436,25 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.feature_vector_entities = [fv.entity_id for fv in self.feature_set.features.list().all()]
 
     def extract_item(self, item: dl.Item) -> dl.Item:
-        try:
-            if item.id in self.feature_vector_entities:
-                logger.info(f'Item {item.id} already has feature vector')
-            else:
-                logger.info(f'Started on item id: {item.id}, filename: {item.filename}')
-                img = item.download(save_locally=False, to_array=True)
-                model_input = self.preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)
-                import torch.nn as nn
-                layers = list(self.model.children())
-                feature_extractor = nn.Sequential(*layers[:self.selected_layer+1])
-                feature_extractor.eval()
-                feature_output = feature_extractor(model_input)
-                flattened_output = feature_output.view(feature_output.size(0), -1)
-                output = flattened_output[0].cpu().detach().numpy().tolist()
-                self.feature_set.features.create(value=output, entity=item)
-                self.feature_vector_entities.append(item.id)
-                logger.info(f'Done extracting features for item id: {item.id}, filename: {item.filename}')
-            return item
-        except AttributeError:
-            raise Exception(f"{self.model_entity.name} needs to first have an associated feature set to extract "
-                            f"features. Please, run create_feature_set first.")
+        if self.feature_set is None:
+            self.create_feature_set(self.configuration.get("selected_layer", -2))
+        if item.id in self.feature_vector_entities:
+            logger.info(f'Item {item.id} already has feature vector')
+        else:
+            logger.info(f'Started on item id: {item.id}, filename: {item.filename}')
+            img = item.download(save_locally=False, to_array=True)
+            model_input = self.preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)
+            import torch.nn as nn
+            layers = list(self.model.children())
+            feature_extractor = nn.Sequential(*layers[:self.selected_layer+1])
+            feature_extractor.eval()
+            feature_output = feature_extractor(model_input)
+            flattened_output = feature_output.view(feature_output.size(0), -1)
+            output = flattened_output[0].cpu().detach().numpy().tolist()
+            self.feature_set.features.create(value=output, entity=item)
+            self.feature_vector_entities.append(item.id)
+            logger.info(f'Done extracting features for item id: {item.id}, filename: {item.filename}')
+        return item
 
     def extract_dataset(self, dataset: dl.Dataset, query=None, progress=None):
         pages = dataset.items.list()

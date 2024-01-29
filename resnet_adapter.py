@@ -3,6 +3,7 @@ from imgaug import augmenters as iaa
 import torchvision.transforms
 import torch.optim as optim
 import torch.nn.functional
+import concurrent.futures
 import pandas as pd
 import numpy as np
 import dtlpy as dl
@@ -12,8 +13,11 @@ import torch
 import time
 import copy
 import tqdm
+import json
 import os
 
+from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor
 from dtlpy.utilities.dataset_generators.dataset_generator import collate_torch
 from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGeneratorTorch
 
@@ -38,6 +42,9 @@ class ModelAdapter(dl.BaseModelAdapter):
                 model_entity = dl.models.get(model_id=model_entity['model_id'])
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.feature_set = None
+        self.selected_layer = None
+        self.feature_vector_entities = None
         super(ModelAdapter, self).__init__(model_entity=model_entity)
 
     def load(self, local_path, **kwargs):
@@ -330,14 +337,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         except Exception:
             logger.warning('Failed creating shebang confusion report! Continue without...')
 
-    def predict(self, batch, **kwargs):
-        """ Model inference (predictions) on batch of images
-
-            Virtual method - need to implement
-
-        :param batch: `np.ndarray`
-        :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
-        """
+    def preprocess(self, img: np.ndarray) -> torch.Tensor:
         input_size = self.configuration.get('input_size', 256)
 
         def gray_to_rgb(x):
@@ -352,7 +352,19 @@ class ModelAdapter(dl.BaseModelAdapter):
                 torchvision.transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # [-1, 1]
             ]
         )
-        img_tensors = [preprocess(img.astype('uint8')) for img in batch]
+
+        return preprocess(img)
+
+    def predict(self, batch, **kwargs):
+        """ Model inference (predictions) on batch of images
+
+            Virtual method - need to implement
+
+        :param batch: `np.ndarray`
+        :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
+        """
+
+        img_tensors = [self.preprocess(img.astype('uint8')) for img in batch]
         batch_tensor = torch.stack(img_tensors).to(self.device)
         batch_output = self.model(batch_tensor)
         batch_predictions = torch.nn.functional.softmax(batch_output, dim=1)
@@ -383,6 +395,86 @@ class ModelAdapter(dl.BaseModelAdapter):
         """
 
         ...
+
+    def create_feature_set(self, selected_layer: int = -2):
+        layers = list(self.model.children())
+        selected_layer = selected_layer if selected_layer > 0 else len(layers) + selected_layer
+        self.selected_layer = selected_layer
+        try:
+            feature_set = self.model_entity.project.feature_sets.get(
+                feature_set_name=f'{self.model_entity.name}-feature-set'
+                )
+            logger.info(f'Feature Set found! name: {feature_set.name}, id: {feature_set.id}')
+        except dl.exceptions.NotFound:
+            logger.info('Feature Set not found. creating...')
+            input_size = self.configuration.get('input_size', 256)
+            x = torch.rand(1, 3, input_size, input_size)
+            for layer in layers[:self.selected_layer+1]:
+                x = layer(x)
+            feature_set = self.model_entity.project.feature_sets.create(
+                name=f'{self.model_entity.name}-feature-set',
+                project_id=self.model_entity.project.id,
+                set_type='model',
+                entity_type=dl.FeatureEntityType.ITEM,
+                size=x.numel()
+                )
+            logger.info(f'Feature Set created! name: {feature_set.name}, id: {feature_set.id}')
+            binaries = self.model_entity.project.datasets._get_binaries_dataset()
+            buffer = BytesIO()
+            buffer.write(json.dumps({}, default=lambda x: None).encode())
+            buffer.seek(0)
+            buffer.name = "clip_feature_set.json"
+            feature_set_item = binaries.items.upload(
+                local_path=buffer,
+                item_metadata={
+                    "system": {
+                        "clip_feature_set_id": feature_set.id
+                        }
+                    }
+                )
+        self.feature_set = feature_set
+        self.feature_vector_entities = [fv.entity_id for fv in self.feature_set.features.list().all()]
+
+    def extract_item(self, item: dl.Item) -> dl.Item:
+        try:
+            if item.id in self.feature_vector_entities:
+                logger.info(f'Item {item.id} already has feature vector')
+            else:
+                logger.info(f'Started on item id: {item.id}, filename: {item.filename}')
+                img = item.download(save_locally=False, to_array=True)
+                model_input = self.preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)
+                import torch.nn as nn
+                layers = list(self.model.children())
+                feature_extractor = nn.Sequential(*layers[:self.selected_layer+1])
+                feature_extractor.eval()
+                feature_output = feature_extractor(model_input)
+                flattened_output = feature_output.view(feature_output.size(0), -1)
+                output = flattened_output[0].cpu().detach().numpy().tolist()
+                self.feature_set.features.create(value=output, entity=item)
+                self.feature_vector_entities.append(item.id)
+                logger.info(f'Done extracting features for item id: {item.id}, filename: {item.filename}')
+            return item
+        except AttributeError:
+            raise Exception(f"{self.model_entity.name} needs to first have an associated feature set to extract "
+                            f"features. Please, run create_feature_set first.")
+
+    def extract_dataset(self, dataset: dl.Dataset, query=None, progress=None):
+        pages = dataset.items.list()
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.extract_item, obj) for obj in pages.all()]
+            done_count = 0
+            previous_update = 0
+            while futures:
+                done, futures = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
+                done_count += len(done)
+                current_progress = done_count * 100 // pages.items_count
+
+                if (current_progress // 10) % 10 > previous_update:
+                    previous_update = (current_progress // 10) % 10
+                    if progress is not None:
+                        progress.update(progress=previous_update * 10)
+                    else:
+                        logger.info(f'Extracted {done_count} out of {pages.items_count} items.')
 
 
 def _get_imagenet_label_json():

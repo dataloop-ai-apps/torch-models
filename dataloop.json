@@ -13,7 +13,7 @@
   },
   "codebase": {
     "type": "git",
-    "gitUrl": "https://github.com:dataloop-ai-apps/torch-models.git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
     "gitTag": "0.1.1"
   },
   "components": {

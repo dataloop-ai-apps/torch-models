@@ -10,7 +10,7 @@
 # dataset.update(True)
 
 
-from resnet_adapter import ModelAdapter
+from adapters.resnet.resnet_adapter import ModelAdapter
 import dtlpy as dl
 import numpy as np
 import json

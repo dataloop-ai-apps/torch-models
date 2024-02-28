@@ -3,7 +3,6 @@ from imgaug import augmenters as iaa
 import torchvision.transforms
 import torch.optim as optim
 import torch.nn.functional
-import pandas as pd
 import numpy as np
 import dtlpy as dl
 import torch.nn
@@ -46,6 +45,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             Virtual method - need to implement
 
             This function is called by load_from_model (download to local and then loads)
+
 
         :param local_path: `str` directory path in local FileSystem
         """

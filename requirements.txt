@@ -2,4 +2,5 @@ dtlpy
 torch>=1.8
 torchvision>0.9
 imbalanced-learn
+imblearn
 imgaug

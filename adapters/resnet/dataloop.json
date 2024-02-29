@@ -51,7 +51,7 @@
     "modules": [
       {
         "name": "resnet-module",
-        "entryPoint": "resnet_adapter.py",
+        "entryPoint": "adapters/resnet/resnet_adapter.py",
         "className": "ModelAdapter",
         "computeConfig": "resnet-deploy",
         "description": "ResNet Module",

@@ -53,7 +53,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         # load model arch and state
         model_path = os.path.join(local_path, weights_filename)
         logger.info("Loading a model from {}".format(local_path))
-        self.model = torch.load(model_path)
+        self.model = torch.load(model_path, map_location=self.device)
         self.model.to(self.device)
         self.model.eval()
         # How to load the label_map from loaded model

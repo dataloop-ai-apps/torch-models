@@ -187,12 +187,6 @@
           }
         ],
         "inputType": "image",
-        "supportedMethods": {
-          "load": true,
-          "predict": true,
-          "train": true,
-          "evaluate": true
-        },
         "description": "Resnet model from The torchvision package consists of popular datasets, model architectures, and common image transformations for computer vision",
         "labels": [
           "tench, Tinca tinca",

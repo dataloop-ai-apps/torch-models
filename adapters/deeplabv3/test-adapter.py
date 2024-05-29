@@ -34,21 +34,21 @@ if __name__ == '__main__':
     #     'validation': dl.Filters(field='dir', values='/val').prepare()
     # }
     # model_to_train.update(True)
+
+    model_to_train.labels = ['dog', 'cat']
+    model_to_train.update(True)
     #
-    # model_to_train.labels = ['dog', 'cat']
-    # model_to_train.update(True)
-    # #
-    # # # resnet pretrained
-    # adapter1 = ModelAdapter(model_to_train)
-    # adapter1.train_model(model_to_train)
-    #
-    # # predicted with new weight:
-    # project = dl.projects.get(project_name="segmentation-models")
-    # datasets = project.datasets.get(dataset_name="dog-cats")
-    # item = datasets.items.get(item_id="6656f113eb4237fb401e2799")
-    # item1 = datasets.items.get(item_id="6656f107f90fbdd8a422c4d3")
-    # item2 = datasets.items.get(item_id="665592ef95c92d28416adbf9")
-    # item3 = datasets.items.get(item_id="665592ef58f16d5ecf574035")
-    #
-    # adapter1 = ModelAdapter(model_to_train)
-    # adapter1.predict_items([item, item1, item2, item3])
+    # # resnet pretrained
+    adapter1 = ModelAdapter(model_to_train)
+    adapter1.train_model(model_to_train)
+
+    # predicted with new weight:
+    project = dl.projects.get(project_name="segmentation-models")
+    datasets = project.datasets.get(dataset_name="dog-cats")
+    item = datasets.items.get(item_id="6656f113eb4237fb401e2799")
+    item1 = datasets.items.get(item_id="6656f107f90fbdd8a422c4d3")
+    item2 = datasets.items.get(item_id="665592ef95c92d28416adbf9")
+    item3 = datasets.items.get(item_id="665592ef58f16d5ecf574035")
+
+    adapter1 = ModelAdapter(model_to_train)
+    adapter1.predict_items([item, item1, item2, item3])

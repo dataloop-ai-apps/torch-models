@@ -175,7 +175,7 @@
         "configuration": {
           "model_name": "deeplabv3_resnet50",
           "batch_size": 16,
-          "num_epochs": 10
+          "num_epochs": 100
         },
         "inputType": "image",
         "description": "",
@@ -211,7 +211,7 @@
         "configuration": {
           "model_name": "deeplabv3_resnet101",
           "batch_size": 16,
-          "num_epochs": 10
+          "num_epochs": 100
         },
         "inputType": "image",
         "description": "",
@@ -247,7 +247,7 @@
         "configuration": {
           "model_name": "deeplabv3_mobilenet_v3_large",
           "batch_size": 16,
-          "num_epochs": 10
+          "num_epochs": 100
         },
         "inputType": "image",
         "description": "",

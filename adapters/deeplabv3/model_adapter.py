@@ -1,5 +1,3 @@
-from torchvision.models.segmentation import DeepLabV3_ResNet50_Weights, DeepLabV3_ResNet101_Weights, \
-    DeepLabV3_MobileNet_V3_Large_Weights, deeplabv3_resnet50, deeplabv3_resnet101, deeplabv3_mobilenet_v3_large
 from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGeneratorTorch
 from dtlpy.utilities.reports import Report, FigOptions, ConfusionMatrix
 from torchvision.transforms.functional import InterpolationMode
@@ -31,64 +29,23 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         super().__init__(model_entity)
 
-    @staticmethod
-    def get_weight_file(model_name):
-        weights_mapping = {
-            'deeplabv3_resnet50': 'DeepLabV3_ResNet50_Weights',
-            'deeplabv3_resnet101': 'DeepLabV3_ResNet101_Weights',
-            'deeplabv3_mobilenetv3_large': 'DeepLabV3_MobileNet_V3_Large_Weights',
-        }
-        weights_name = weights_mapping.get(model_name, None)
-        weights_class = getattr(torchvision.models.segmentation, weights_name)
-        trasfomers = weights_class.COCO_WITH_VOC_LABELS_V1.transforms()
-
-    @staticmethod
-    def load_deeplabv3(model_name, num_classes):
-        """
-        Load a DeepLabV3 model with specified weights and update the classifier head.
-
-        Args:
-            model_name (str): Name of the DeepLabV3 model ('deeplabv3_resnet50', 'deeplabv3_resnet101', 'deeplabv3_mobilenet_v3_large').
-            num_classes (int): Number of output classes for the classifier head.
-
-        Returns:
-            model (torch.nn.Module): The DeepLabV3 model with updated classifier head.
-
-        Raises:
-            ValueError: If model_name is not one of the valid options.
-        """
-        model_name = model_name.lower()
-        valid_model_names = {
-            "deeplabv3_resnet50": (deeplabv3_resnet50, DeepLabV3_ResNet50_Weights.DEFAULT),
-            "deeplabv3_resnet101": (deeplabv3_resnet101, DeepLabV3_ResNet101_Weights.DEFAULT),
-            "deeplabv3_mobilenet_v3_large": (deeplabv3_mobilenet_v3_large, DeepLabV3_MobileNet_V3_Large_Weights.DEFAULT)
-        }
-
-        if model_name not in valid_model_names:
-            raise ValueError(
-                "Invalid 'model_name'. Valid options are: 'deeplabv3_resnet50', 'deeplabv3_resnet101', "
-                "'deeplabv3_mobilenet_v3_large'.")
-
-        model_class, weights = valid_model_names[model_name]
-        model = model_class(weights=weights)
-
-        # Define the new classifier head with the desired number of output classes
-        in_channels = model.classifier[4].in_channels
-        new_classifier = torch.nn.Conv2d(in_channels, num_classes, kernel_size=1)
-        model.classifier[4] = new_classifier
-
-        return model
-
     def load(self, local_path, **kwargs):
         """ Loads model and populates self.model with a `runnable` model
             This function is called by load_from_model (download to local and then loads)
 
         :param local_path: `str` directory path in local FileSystem
         """
-        model_name = self.configuration.get('model_name')
-        self.model = self.load_deeplabv3(model_name=model_name,
-                                         num_classes=len(self.model_entity.id_to_label_map.items()))
+        model_name = self.configuration.get('model_name', 'deeplabv3_resnet50')
+        self.model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=True)
+        logger.info(f"Loaded architecture from pytorch hub: {model_name}")
+
+        # Adjust by the num of classes
+        num_classes = len(self.model_entity.id_to_label_map.items())
+        in_channels = self.model.classifier[4].in_channels
+        new_classifier = torch.nn.Conv2d(in_channels, num_classes, kernel_size=1)
+        self.model.classifier[4] = new_classifier
         self.model.to(self.device)
+        logger.info(f"Adjusted model by model_entity.id_to_label_map labels amount: {num_classes}")
 
         weights = self.configuration.get('weights_filename', None)
         logger.info("Loading a model from {}".format(local_path))
@@ -118,7 +75,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         :param data_path: `str` local File System path to where the data was downloaded and converted at
         :param output_path: `str` local File System path where to dump training mid-results (checkpoints, logs...)
         """
-        num_epochs = self.configuration.get('num_epochs', 100)
+        num_epochs = self.configuration.get('num_epochs', 10)
         batch_size = self.configuration.get('batch_size', 64)
         input_size = self.configuration.get('input_size', 520)
         on_epoch_end_callback = kwargs.get('on_epoch_end_callback')
@@ -398,38 +355,34 @@ class ModelAdapter(dl.BaseModelAdapter):
         :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
         """
         self.model.eval()
+        # def gray_to_rgb(x):
+        #     return x.convert('RGB')
 
-        # self.class_names = self.model_entity.labels
-        input_size = self.configuration.get('input_size', 520)
+        input_size = self.configuration.get('input_size', 224)
 
         preprocess = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
-                                                     torchvision.transforms.Resize(
-                                                         (input_size, input_size),
-                                                         interpolation=InterpolationMode.BILINEAR),
+                                                     # torchvision.transforms.Resize((input_size, input_size)),
                                                      self.gray_to_rgb,
                                                      torchvision.transforms.ToTensor(),
                                                      torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                                                       std=[0.229, 0.224, 0.225])])
 
-        # img_tensors = [preprocess(img.astype('uint8')) for img in batch]
-        # batch_tensor = torch.stack(img_tensors).to(self.device)
-
         batch_annotations = list()
 
-        # predict image and not batch to get more accurate results (without resizing)
         for img in batch:
-            collection = self.inference(img_tensor=preprocess(img.astype('uint8')).unsqueeze(0).to(self.device))
+            img_tensor = preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)  # Add batch dimension
+            collection = self.inference(img_tensor)
             batch_annotations.append(collection)
 
         return batch_annotations
 
     def inference(self, img_tensor):
-        labels = list(self.model_entity.id_to_label_map.values())
         # Forward pass through the model
+        labels = list(self.model_entity.id_to_label_map.values())
         with torch.no_grad():
-            batch_output = self.model(img_tensor)['out'][0]
+            img_output = self.model(img_tensor)['out'][0]
 
-        probs = torch.softmax(batch_output, dim=0)
+        probs = torch.softmax(img_output, dim=0)
         output_predictions = probs.argmax(dim=0)
 
         # Get the unique class indices in the predictions
@@ -459,15 +412,13 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         # Create an AnnotationCollection for the current image
         collection = dl.AnnotationCollection()
-        for detection in detections:
+        for detection in detections:  # TODO TWO SIDE SHEEP ISSUE
             collection.add(
                 annotation_definition=dl.Polygon.from_segmentation(mask=detection['segmentation'],
-                                                                   # TODO: sheep example
                                                                    label=detection['class']),
                 model_info={'name': self.model_entity.name,
                             'confidence': detection['confidence'],
                             'model_id': self.model_entity.id})
-
         return collection
 
     def convert_from_dtlpy(self, data_path, **kwargs):

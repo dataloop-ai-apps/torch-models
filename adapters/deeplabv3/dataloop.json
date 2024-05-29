@@ -1,0 +1,280 @@
+{
+  "name": "deeplabv3",
+  "displayName": "DeepLabv3",
+  "version": "0.0.1",
+  "scope": "project",
+  "description": "DeepLabv3 Model Application",
+  "attributes": {
+    "Provider": "Dataloop",
+    "Category": "Model",
+    "Computer Vision": "Semantic Segmentation",
+    "Media Type": "Image",
+    "Libraries": "Torch"
+  },
+  "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
+    "gitTag": "0.1.11"
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "deeplab-deploy",
+        "runtime": {
+          "podType": "regular-xs",
+          "concurrency": 1,
+          "runnerImage": "gcr.io/viewo-g/modelmgmt/resnet:0.0.8",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 100
+          }
+        }
+      },
+      {
+        "name": "deeplab-train-evaluate",
+        "runtime": {
+          "podType": "gpu-t4",
+          "concurrency": 1,
+          "runnerImage": "gcr.io/viewo-g/modelmgmt/resnet:0.0.8",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 100
+          }
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "deeplab-module",
+        "entryPoint": "adapters/deeplabv3/model_adapter.py",
+        "className": "ModelAdapter",
+        "computeConfig": "deeplab-deploy",
+        "description": "DeepLabv3 Module",
+        "initInputs": [
+          {
+            "type": "Model",
+            "name": "model_entity"
+          }
+        ],
+        "functions": [
+          {
+            "name": "evaluate_model",
+            "computeConfig": "deeplab-train-evaluate",
+            "input": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              },
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": "Dataloop Dataset Entity"
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
+              }
+            ],
+            "output": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              },
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": "Dataloop Dataset Entity"
+              }
+            ],
+            "displayName": "Evaluate a Model",
+            "displayIcon": "",
+            "description": "Function to evaluate DeepLabv3 model performance"
+          },
+          {
+            "name": "predict_items",
+            "input": [
+              {
+                "type": "Item[]",
+                "name": "items",
+                "description": "List of items to run inference on"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item[]",
+                "name": "items",
+                "description": "The same input images for prediction."
+              },
+              {
+                "type": "Annotation[]",
+                "name": "annotations",
+                "description": "The predicted annotations."
+              }
+            ],
+            "displayName": "Predict Items",
+            "displayIcon": "",
+            "description": "Function to run DeepLabv3 inference on items"
+          },
+          {
+            "name": "train_model",
+            "computeConfig": "deeplab-train-evaluate",
+            "input": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "output": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "displayName": "Train a Model",
+            "displayIcon": "",
+            "description": "Function to train DeepLabv3 model"
+          },
+          {
+            "name": "predict_dataset",
+            "input": [
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": ""
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
+              }
+            ],
+            "output": [
+            ],
+            "displayName": "Predict Dataset",
+            "displayIcon": "",
+            "description": "Function to run DeepLabv3 inference on a dataset"
+          }
+        ]
+      }
+    ],
+    "models": [
+      {
+        "name": "pretrained-deeplab-resnet50",
+        "moduleName": "deeplab-module",
+        "scope": "project",
+        "status": "pre-trained",
+        "configuration": {
+          "model_name": "deeplabv3_resnet50",
+          "batch_size": 16,
+          "num_epochs": 10
+        },
+        "inputType": "image",
+        "description": "",
+        "labels": [
+          "background",
+          "aeroplane",
+          "bicycle",
+          "bird",
+          "boat",
+          "bottle",
+          "bus",
+          "car",
+          "cat",
+          "chair",
+          "cow",
+          "dining table",
+          "dog",
+          "horse",
+          "motorbike",
+          "person",
+          "potted plant",
+          "sheep",
+          "sofa",
+          "train",
+          "tv/monitor"
+        ]
+      },
+      {
+        "name": "pretrained-deeplab-resnet101",
+        "moduleName": "deeplab-module",
+        "scope": "project",
+        "status": "pre-trained",
+        "configuration": {
+          "model_name": "deeplabv3_resnet101",
+          "batch_size": 16,
+          "num_epochs": 10
+        },
+        "inputType": "image",
+        "description": "",
+        "labels": [
+          "background",
+          "aeroplane",
+          "bicycle",
+          "bird",
+          "boat",
+          "bottle",
+          "bus",
+          "car",
+          "cat",
+          "chair",
+          "cow",
+          "dining table",
+          "dog",
+          "horse",
+          "motorbike",
+          "person",
+          "potted plant",
+          "sheep",
+          "sofa",
+          "train",
+          "tv/monitor"
+        ]
+      },
+      {
+        "name": "pretrained-deeplab-mobilenet-v3-large",
+        "moduleName": "deeplab-module",
+        "scope": "project",
+        "status": "pre-trained",
+        "configuration": {
+          "model_name": "deeplabv3_mobilenet_v3_large",
+          "batch_size": 16,
+          "num_epochs": 10
+        },
+        "inputType": "image",
+        "description": "",
+        "labels": [
+          "background",
+          "aeroplane",
+          "bicycle",
+          "bird",
+          "boat",
+          "bottle",
+          "bus",
+          "car",
+          "cat",
+          "chair",
+          "cow",
+          "dining table",
+          "dog",
+          "horse",
+          "motorbike",
+          "person",
+          "potted plant",
+          "sheep",
+          "sofa",
+          "train",
+          "tv/monitor"
+        ]
+      }
+    ]
+  }
+}

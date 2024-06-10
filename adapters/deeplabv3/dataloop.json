@@ -182,7 +182,7 @@
         },
         "inputType": "image",
         "outputType": "segment",
-        "description": "",
+        "description": "A pre-trained semantic segmentation model based on the DeepLabv3 architecture with a ResNet-50 backbone, designed for efficient and accurate image segmentation tasks.",
         "labels": [
           "background",
           "aeroplane",
@@ -222,7 +222,7 @@
         },
         "inputType": "image",
         "outputType": "segment",
-        "description": "",
+        "description": "A pre-trained semantic segmentation model based on the DeepLabv3 architecture with a ResNet-101 backbone, designed for efficient and accurate image segmentation tasks.",
         "labels": [
           "background",
           "aeroplane",
@@ -262,7 +262,7 @@
         },
         "inputType": "image",
         "outputType": "segment",
-        "description": "",
+        "description": "a pre-trained semantic segmentation model based on the DeepLabv3 architecture with a Mobilenet-v3-large backbone, designed for efficient and accurate image segmentation tasks.",
         "labels": [
           "background",
           "aeroplane",

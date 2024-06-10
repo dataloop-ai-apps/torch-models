@@ -181,6 +181,7 @@
           "conf_threshold": 0.8
         },
         "inputType": "image",
+        "outputType": "polygon",
         "description": "",
         "labels": [
           "background",
@@ -220,6 +221,7 @@
           "conf_threshold": 0.8
         },
         "inputType": "image",
+        "outputType": "polygon",
         "description": "",
         "labels": [
           "background",
@@ -259,6 +261,7 @@
           "conf_threshold": 0.8
         },
         "inputType": "image",
+        "outputType": "polygon",
         "description": "",
         "labels": [
           "background",

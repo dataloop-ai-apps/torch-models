@@ -1,8 +1,8 @@
 {
   "name": "deeplabv3",
   "displayName": "DeepLabv3",
-  "version": "0.0.1",
-  "scope": "project",
+  "version": "0.1.11",
+  "scope": "public",
   "description": "DeepLabv3 Model Application",
   "attributes": {
     "Provider": "Dataloop",
@@ -175,7 +175,10 @@
         "configuration": {
           "model_name": "deeplabv3_resnet50",
           "batch_size": 16,
-          "num_epochs": 100
+          "num_epochs": 100,
+          "input_size": 256,
+          "augmentation": true,
+          "conf_threshold": 0.8
         },
         "inputType": "image",
         "description": "",
@@ -211,7 +214,10 @@
         "configuration": {
           "model_name": "deeplabv3_resnet101",
           "batch_size": 16,
-          "num_epochs": 100
+          "num_epochs": 100,
+          "input_size": 256,
+          "augmentation": true,
+          "conf_threshold": 0.8
         },
         "inputType": "image",
         "description": "",
@@ -247,7 +253,10 @@
         "configuration": {
           "model_name": "deeplabv3_mobilenet_v3_large",
           "batch_size": 16,
-          "num_epochs": 100
+          "num_epochs": 100,
+          "input_size": 256,
+          "augmentation": true,
+          "conf_threshold": 0.8
         },
         "inputType": "image",
         "description": "",

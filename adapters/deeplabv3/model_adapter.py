@@ -3,10 +3,11 @@ from dtlpy.utilities.reports import Report, FigOptions, ConfusionMatrix
 from torchvision.transforms.functional import InterpolationMode
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
-import seaborn as sns
+import matplotlib.pyplot as plt
 import torchvision.transforms
 import torch.optim as optim
 import torch.nn.functional
+import seaborn as sns
 import numpy as np
 import dtlpy as dl
 import torch.nn
@@ -25,39 +26,29 @@ logger = logging.getLogger('segmentation-models-adapter')
                               init_inputs={'model_entity': dl.Model})
 class ModelAdapter(dl.BaseModelAdapter):
 
-    def __init__(self, model_entity=None):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        super().__init__(model_entity)
-
     def load(self, local_path, **kwargs):
         """ Loads model and populates self.model with a `runnable` model
             This function is called by load_from_model (download to local and then loads)
 
         :param local_path: `str` directory path in local FileSystem
         """
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        weights = self.configuration.get('weights_filename', None)
         model_name = self.configuration.get('model_name', 'deeplabv3_resnet50')
         self.model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=True)
-        logger.info(f"Loaded architecture from pytorch hub: {model_name}")
-
-        # Adjust by the num of classes
-        num_classes = len(self.model_entity.id_to_label_map.items())
-        in_channels = self.model.classifier[4].in_channels
-        new_classifier = torch.nn.Conv2d(in_channels, num_classes, kernel_size=1)
-        self.model.classifier[4] = new_classifier
-        self.model.to(self.device)
-        logger.info(f"Adjusted model by model_entity.id_to_label_map labels amount: {num_classes}")
-
-        weights = self.configuration.get('weights_filename', None)
-        logger.info("Loading a model from {}".format(local_path))
-
         if weights is not None:
             weights_filename = os.path.join(local_path, self.configuration.get('weights_filename'))
             if os.path.isfile(weights_filename):
-                # Load the custom-trained weights
+                logger.info("Loading a model from {}".format(local_path))
+                num_classes = len(self.model_entity.id_to_label_map.items())
+                self.model.classifier[-1] = torch.nn.Conv2d(256, num_classes, kernel_size=(1, 1), stride=(1, 1))
                 self.model.load_state_dict(torch.load(weights_filename, map_location=self.device))
                 logger.info("Loaded custom weights {}".format(weights_filename))
             else:
-                logger.info("No weights file found. Loaded pretrained weights!")
+                logger.info(
+                    "No weights file found. Loaded pretrained weights! Loaded architecture from pytorch hub: {model_name}")
+
+        self.model.to(self.device)
 
     def save(self, local_path, **kwargs):
         """ saves configuration and weights locally
@@ -75,9 +66,10 @@ class ModelAdapter(dl.BaseModelAdapter):
         :param data_path: `str` local File System path to where the data was downloaded and converted at
         :param output_path: `str` local File System path where to dump training mid-results (checkpoints, logs...)
         """
-        num_epochs = self.configuration.get('num_epochs', 10)
+        num_epochs = self.configuration.get('num_epochs', 100)
         batch_size = self.configuration.get('batch_size', 64)
         input_size = self.configuration.get('input_size', 520)
+        augmentation = self.configuration.get('aug', True)
         on_epoch_end_callback = kwargs.get('on_epoch_end_callback')
         train_filter = self.model_entity.metadata['system']['subsets']['train']['filter']
         val_filter = self.model_entity.metadata['system']['subsets']['validation']['filter']
@@ -86,22 +78,23 @@ class ModelAdapter(dl.BaseModelAdapter):
         os.makedirs(os.path.join(output_path, 'weights'), exist_ok=True)
         logger.info("Model set to train mode.")
 
+        train_transformer = [torchvision.transforms.ToPILImage(),
+                             self.gray_to_rgb,
+                             torchvision.transforms.Resize((input_size, input_size),
+                                                           interpolation=InterpolationMode.BILINEAR)]
+        if augmentation:
+            train_transformer += [
+                torchvision.transforms.RandomHorizontalFlip(0.5),  # horizontal flip with a probability of 50%.
+                torchvision.transforms.RandomVerticalFlip(0.2),  # vertical flip with a probability of 20%.
+            ]
+
+        train_transformer += [torchvision.transforms.ToTensor(),
+                              torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                               std=[0.229, 0.224, 0.225])]
         # DATA TRANSFORMERS
         data_transforms = {
 
-            'train': [
-                torchvision.transforms.ToPILImage(),
-                self.gray_to_rgb,
-                torchvision.transforms.Resize((input_size, input_size), interpolation=InterpolationMode.BILINEAR),
-                # Apply horizontal flip augmentation with a probability of 50%.
-                torchvision.transforms.RandomHorizontalFlip(0.5),
-                # Apply vertical flip augmentation with a probability of 20%.
-                torchvision.transforms.RandomVerticalFlip(0.2),
-                # Apply horizontal flip augmentation with a probability of 50%.
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                 std=[0.229, 0.224, 0.225])
-            ],
+            'train': train_transformer,
             'val': [
                 torchvision.transforms.ToPILImage(),
                 self.gray_to_rgb,
@@ -199,17 +192,17 @@ class ModelAdapter(dl.BaseModelAdapter):
                 with tqdm.tqdm(dataloaders[phase], unit="batch") as tepoch:
                     for batch in tepoch:
                         inputs = torch.stack(tuple(batch[0]), 0).to(self.device)
-                        labels = torch.stack([item['labels'] for item in batch[1]]).to(self.device)
+                        # labels = torch.stack([item['labels'] for item in batch[1]]).to(self.device)
                         masks = torch.stack([item['masks'] for item in batch[1]]).squeeze(1).to(self.device)
                         masks = masks.long()
                         # zero the parameter gradients
                         optimizer.zero_grad()
 
                         # forward
-                        # track history only in train
                         with torch.set_grad_enabled(phase == 'train'):
                             outputs = self.model(inputs)['out']
                             _, preds = torch.max(outputs, 1)
+
                             loss = criterion(outputs, masks)
 
                             # backward + optimize only if in training phase
@@ -273,15 +266,87 @@ class ModelAdapter(dl.BaseModelAdapter):
         time_elapsed = time.time() - since
         logger.info('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         logger.info('Best val loss: {:4f}, best acc: {:4f}'.format(best_loss, best_acc))
+        labels = list(train_dataset.id_to_label_map.values())
+        self.cm_report(dataloaders=dataloaders, labels=labels)
 
+    def predict(self, batch, **kwargs):
+        """ Model inference (predictions) on batch of images
+
+            Virtual method - need to implement
+
+        :param batch: `np.ndarray`
+        :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
+        """
+        self.model.eval()
+
+        # input_size = self.configuration.get('input_size', 224)
+
+        preprocess = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
+                                                     # torchvision.transforms.Resize((input_size, input_size)),
+                                                     self.gray_to_rgb,
+                                                     torchvision.transforms.ToTensor(),
+                                                     torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                                      std=[0.229, 0.224, 0.225])])
+
+        batch_annotations = list()
+
+        for img in batch:
+            img_tensor = preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)  # Add batch dimension
+            collection = self.inference(img_tensor)
+            batch_annotations.append(collection)
+
+        return batch_annotations
+
+    def inference(self, img_tensor):
+        labels = list(self.model_entity.id_to_label_map.values())
+        threshold = self.configuration.get('conf_threshold', 0.8)
+
+        with torch.no_grad():  # Forward pass through the model
+            img_output = self.model(img_tensor)['out'][0]
+        probs = torch.softmax(img_output, dim=0)
+        output_predictions = probs.argmax(dim=0)
+
+        # Get the unique class indices in the predictions excluding class index 0
+        unique_class_indices = torch.unique(output_predictions.flatten())
+        unique_class_indices = unique_class_indices[unique_class_indices != 0]  # 0 for background
+
+        collection = dl.AnnotationCollection()
+        for class_idx in unique_class_indices:
+            confidence = probs[class_idx].cpu().numpy().max()
+            if confidence < threshold:  # Skip if confidence is below the threshold
+                continue
+
+            class_label = labels[class_idx]
+            class_mask = (output_predictions == class_idx).cpu().numpy().astype(np.uint8)
+            contours = self.extract_contours(class_mask)
+            # self.plot_contours(img_tensor.squeeze(0).permute(1, 2, 0).cpu().numpy(), contours[0])
+
+            for polygon in contours:
+                collection.add(annotation_definition=dl.Polygon(geo=polygon, label=class_label),
+                               model_info={'name': self.model_entity.name,
+                                           'confidence': confidence,
+                                           'model_id': self.model_entity.id})
+        return collection
+
+    def convert_from_dtlpy(self, data_path, **kwargs):
+        """ Convert Dataloop structure data to model structured
+
+            Virtual method - need to implement
+
+            e.g. take dlp dir structure and construct annotation file
+
+        :param data_path: `str` local File System directory path where
+                           we already downloaded the data from dataloop platform
+        :return:
+        """
+
+    def cm_report(self, dataloaders, labels):
         ####################
         # Confusion Matrix #
         ####################
         try:
-
             y_true_total = list()
             y_pred_total = list()
-            labels = list(train_dataset.id_to_label_map.values())
             colors = sns.color_palette("rocket", as_cmap=True)
             report = Report(ncols=1, nrows=3)
 
@@ -346,93 +411,6 @@ class ModelAdapter(dl.BaseModelAdapter):
         except Exception:
             logger.warning('Failed creating confusion report! Continue without...')
 
-    def predict(self, batch, **kwargs):
-        """ Model inference (predictions) on batch of images
-
-            Virtual method - need to implement
-
-        :param batch: `np.ndarray`
-        :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
-        """
-        self.model.eval()
-        # def gray_to_rgb(x):
-        #     return x.convert('RGB')
-
-        input_size = self.configuration.get('input_size', 224)
-
-        preprocess = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
-                                                     # torchvision.transforms.Resize((input_size, input_size)),
-                                                     self.gray_to_rgb,
-                                                     torchvision.transforms.ToTensor(),
-                                                     torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                                                      std=[0.229, 0.224, 0.225])])
-
-        batch_annotations = list()
-
-        for img in batch:
-            img_tensor = preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)  # Add batch dimension
-            collection = self.inference(img_tensor)
-            batch_annotations.append(collection)
-
-        return batch_annotations
-
-    def inference(self, img_tensor):
-        # Forward pass through the model
-        labels = list(self.model_entity.id_to_label_map.values())
-        with torch.no_grad():
-            img_output = self.model(img_tensor)['out'][0]
-
-        probs = torch.softmax(img_output, dim=0)
-        output_predictions = probs.argmax(dim=0)
-
-        # Get the unique class indices in the predictions
-        unique_class_indices = torch.unique(output_predictions.flatten())
-
-        detections = []
-        for class_idx in unique_class_indices:
-            # Skip background class
-            if class_idx == 0:
-                continue
-
-            class_label = labels[class_idx]
-
-            # Extract the segmentation mask for the current class
-            class_mask = (output_predictions == class_idx).cpu().numpy().astype(np.uint8)
-
-            # Calculate confidence for the current class
-            confidence = probs[class_idx].cpu().numpy()
-            confidence = confidence.max()
-
-            # Add the segmentation and class information to detections
-            detections.append({
-                'segmentation': class_mask,
-                'class': class_label,
-                'confidence': confidence
-            })
-
-        # Create an AnnotationCollection for the current image
-        collection = dl.AnnotationCollection()
-        for detection in detections:  # TODO TWO SIDE SHEEP ISSUE
-            collection.add(
-                annotation_definition=dl.Polygon.from_segmentation(mask=detection['segmentation'],
-                                                                   label=detection['class']),
-                model_info={'name': self.model_entity.name,
-                            'confidence': detection['confidence'],
-                            'model_id': self.model_entity.id})
-        return collection
-
-    def convert_from_dtlpy(self, data_path, **kwargs):
-        """ Convert Dataloop structure data to model structured
-
-            Virtual method - need to implement
-
-            e.g. take dlp dir structure and construct annotation file
-
-        :param data_path: `str` local File System directory path where
-                           we already downloaded the data from dataloop platform
-        :return:
-        """
-
     @staticmethod
     def gray_to_rgb(x):
         return x.convert('RGB')
@@ -467,9 +445,20 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         return ims, tgs
 
+    @staticmethod
+    def plot_contours(image, contours):
+        plt.figure(figsize=(10, 10))
+        plt.imshow(image, cmap='gray')
 
-def _get_imagenet_label_json():
-    import json
-    with open('imagenet_labels.json', 'r') as fh:
-        labels = json.load(fh)
-    return list(labels.values())
+        plt.plot(contours[:, 0], contours[:, 1], linewidth=2, label='Contour')
+        plt.title('Contours on Image')
+        plt.axis('off')
+        plt.legend()
+        plt.show()
+
+    @staticmethod
+    def extract_contours(mask):
+        contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if len(contours) > 0:
+            contours = [contour.squeeze(axis=1).reshape(-1, 2) for contour in contours]
+        return contours

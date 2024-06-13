@@ -4,3 +4,4 @@ torchvision>0.9
 imbalanced-learn
 imblearn
 imgaug
+scikit-image>0.20.0

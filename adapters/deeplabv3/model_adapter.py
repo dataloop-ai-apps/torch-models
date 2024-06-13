@@ -316,7 +316,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         for class_idx in unique_class_indices:
             confidence = probs[class_idx].cpu().numpy().max()
             if confidence < threshold:  # Skip if confidence is below the threshold
-                logger.info(f"Confidence:{threshold} , is lower than threshold: {threshold}")
+                logger.info(f"Confidence:{confidence} , is lower than threshold: {threshold}")
                 continue
 
             class_label = labels[class_idx]

@@ -3,7 +3,7 @@
   "displayName": "DeepLabv3",
   "version": "0.1.11",
   "scope": "public",
-  "description": "DeepLabv3 Model Application",
+  "description": "DeepLabv3 is a deep learning model designed for semantic image segmentation, offering precise pixel-level classification and accurate object boundary.",
   "attributes": {
     "Provider": "Dataloop",
     "Category": "Model",
@@ -27,7 +27,7 @@
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
-            "maxReplicas": 2,
+            "maxReplicas": 1,
             "queueLength": 100
           }
         }
@@ -178,7 +178,9 @@
           "num_epochs": 100,
           "input_size": 256,
           "augmentation": true,
-          "conf_threshold": 0.8
+          "conf_threshold": 0.8,
+          "patience_epochs": 10,
+          "early_stopping": true
         },
         "inputType": "image",
         "outputType": "segment",
@@ -218,7 +220,9 @@
           "num_epochs": 100,
           "input_size": 256,
           "augmentation": true,
-          "conf_threshold": 0.8
+          "conf_threshold": 0.8,
+          "patience_epochs": 10,
+          "early_stopping": true
         },
         "inputType": "image",
         "outputType": "segment",
@@ -258,11 +262,13 @@
           "num_epochs": 100,
           "input_size": 256,
           "augmentation": true,
-          "conf_threshold": 0.8
+          "conf_threshold": 0.8,
+          "patience_epochs": 10,
+          "early_stopping": true
         },
         "inputType": "image",
         "outputType": "segment",
-        "description": "a pre-trained semantic segmentation model based on the DeepLabv3 architecture with a Mobilenet-v3-large backbone, designed for efficient and accurate image segmentation tasks.",
+        "description": "A pre-trained semantic segmentation model based on the DeepLabv3 architecture with a Mobilenet-v3-large backbone, designed for efficient and accurate image segmentation tasks.",
         "labels": [
           "background",
           "aeroplane",

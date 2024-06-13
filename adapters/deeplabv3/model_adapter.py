@@ -162,7 +162,8 @@ class ModelAdapter(dl.BaseModelAdapter):
         best_loss = np.inf
         best_acc = 0.0
         not_improving_epochs = 0
-        patience_epochs = 7
+        patience_epochs = self.configuration.get("patience_epochs", 10)
+        early_stop = self.configuration.get("early_stopping", False)
         end_training = False
         self.metrics = {'history': list()}
         self.model.to(device=self.device)
@@ -252,7 +253,7 @@ class ModelAdapter(dl.BaseModelAdapter):
 
                     else:
                         not_improving_epochs += 1
-                    if not_improving_epochs > patience_epochs:
+                    if not_improving_epochs > patience_epochs and early_stop:
                         end_training = True
                         logger.info(f'EarlyStopping counter: {not_improving_epochs} out of {patience_epochs}')
 
@@ -308,12 +309,14 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         # Get the unique class indices in the predictions excluding class index 0
         unique_class_indices = torch.unique(output_predictions.flatten())
-        unique_class_indices = unique_class_indices[unique_class_indices != 0]  # 0 for background
+        if self.model_entity.id_to_label_map[0] == 'background':
+            unique_class_indices = unique_class_indices[unique_class_indices != 0]
 
         collection = dl.AnnotationCollection()
         for class_idx in unique_class_indices:
             confidence = probs[class_idx].cpu().numpy().max()
             if confidence < threshold:  # Skip if confidence is below the threshold
+                logger.info(f"Confidence:{threshold} , is lower than threshold: {threshold}")
                 continue
 
             class_label = labels[class_idx]

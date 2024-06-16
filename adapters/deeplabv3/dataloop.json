@@ -23,7 +23,7 @@
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/gpu/torch-models:0.0.1",
+          "runnerImage": "gcr.io/viewo-g/modelmgmt/resnet:0.0.8",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,

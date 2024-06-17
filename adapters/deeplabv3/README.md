@@ -1,4 +1,4 @@
-# YOLOX Object Detection Model Adapter
+# DeepLabV3 Semantic Segmentation Model Adapter
 
 ## Introduction
 
@@ -25,7 +25,7 @@ for utilizing DeepLab models within the Dataloop platform.
 
 ## Installation
 
-To install the package and create the YOLOv5 model adapter, you will need
+To install the package and create the DeepLabV3 model adapter, you will need
 a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and
 a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
 Dataloop platform. The dataset should
@@ -44,7 +44,7 @@ click [here](https://developers.dataloop.ai/tutorials/model_management/ai_librar
 
 ### Editing the configuration
 
-To edit configurations via the platform, go to the YOLOX page in the Model Management and edit the json
+To edit configurations via the platform, go to the DeepLabV3 page in the Model Management and edit the json
 file displayed there or, via the SDK, by editing the model configuration.
 Click [here](https://developers.dataloop.ai/tutorials/model_management/ai_library/chapter/#model-configuration) for more
 information.

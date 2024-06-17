@@ -50,6 +50,20 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         self.model.to(self.device)
 
+        # Check if the first ID is not 'background'
+        if self.model_entity.id_to_label_map.get(0) != 'background':
+            # Create a new id_to_label_map with 0 as 'background'
+            new_id_to_label_map = {0: 'background'}
+
+            # Adjust all other IDs by incrementing them by 1
+            for idx, label in enumerate(self.model_entity.id_to_label_map.values(), start=1):
+                new_id_to_label_map[idx] = label
+
+            # Update the model entity's id_to_label_map
+            self.model_entity.id_to_label_map = new_id_to_label_map
+            self.model_entity.label_to_id_map = new_id_to_label_map
+            self.model_entity.update()
+
     def save(self, local_path, **kwargs):
         """ saves configuration and weights locally
             the function is called in save_to_model which first save locally and then uploads to model entity
@@ -309,8 +323,8 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         # Get the unique class indices in the predictions excluding class index 0
         unique_class_indices = torch.unique(output_predictions.flatten())
-        if self.model_entity.id_to_label_map[0] == 'background':
-            unique_class_indices = unique_class_indices[unique_class_indices != 0]
+        # if self.model_entity.id_to_label_map[0] == 'background':
+        unique_class_indices = unique_class_indices[unique_class_indices != 0]
 
         collection = dl.AnnotationCollection()
         for class_idx in unique_class_indices:

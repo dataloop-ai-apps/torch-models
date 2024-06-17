@@ -9,8 +9,8 @@ if __name__ == '__main__':
     item = dataset.items.get(item_id="")
     adapter = ModelAdapter(model)
     adapter.predict_items([item])
-    #
-    # # # Train
+
+    # Train
     project = dl.projects.get(project_name="")
     model = project.models.get(model_id="")
     adapter = ModelAdapter(model)

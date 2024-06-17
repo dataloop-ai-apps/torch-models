@@ -37,9 +37,9 @@ class ModelAdapter(dl.BaseModelAdapter):
         model_name = self.configuration.get('model_name', 'deeplabv3_resnet50')
         self.model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=True)
         if weights is not None:
-            weights_filename = os.path.join(local_path, self.configuration.get('weights_filename'))
+            weights_filename = os.path.join(local_path, weights)
             if os.path.isfile(weights_filename):
-                logger.info("Loading a model from {}".format(local_path))
+                logger.info("Loading a model from {}".format(weights_filename))
                 num_classes = len(self.model_entity.id_to_label_map.items())
                 self.model.classifier[-1] = torch.nn.Conv2d(256, num_classes, kernel_size=(1, 1), stride=(1, 1))
                 self.model.load_state_dict(torch.load(weights_filename, map_location=self.device))
@@ -52,6 +52,7 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         # Check if the first ID is not 'background'
         if self.model_entity.id_to_label_map.get(0) != 'background':
+            logger.info("Changing id 0 to background")
             # Create a new id_to_label_map with 0 as 'background'
             new_id_to_label_map = {0: 'background'}
 
@@ -63,6 +64,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             self.model_entity.id_to_label_map = new_id_to_label_map
             self.model_entity.label_to_id_map = new_id_to_label_map
             self.model_entity.update()
+            logger.info("Updated id_to_label_map and label_to_map_id with background as index 0")
 
     def save(self, local_path, **kwargs):
         """ saves configuration and weights locally

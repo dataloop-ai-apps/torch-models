@@ -45,8 +45,8 @@ class ModelAdapter(dl.BaseModelAdapter):
                 self.model.load_state_dict(torch.load(weights_filename, map_location=self.device))
                 logger.info("Loaded custom weights {}".format(weights_filename))
             else:
-                logger.info(
-                    "No weights file found. Loaded pretrained weights! Loaded architecture from pytorch hub: {model_name}")
+                raise Exception(
+                    "No weights file found! Make sure you upload the weights file as an artifact to the model!")
 
         self.model.to(self.device)
 
@@ -207,7 +207,6 @@ class ModelAdapter(dl.BaseModelAdapter):
                 with tqdm.tqdm(dataloaders[phase], unit="batch") as tepoch:
                     for batch in tepoch:
                         inputs = torch.stack(tuple(batch[0]), 0).to(self.device)
-                        # labels = torch.stack([item['labels'] for item in batch[1]]).to(self.device)
                         masks = torch.stack([item['masks'] for item in batch[1]]).squeeze(1).to(self.device)
                         masks = masks.long()
                         # zero the parameter gradients

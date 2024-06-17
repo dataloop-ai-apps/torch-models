@@ -323,7 +323,6 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         # Get the unique class indices in the predictions excluding class index 0
         unique_class_indices = torch.unique(output_predictions.flatten())
-        # if self.model_entity.id_to_label_map[0] == 'background':
         unique_class_indices = unique_class_indices[unique_class_indices != 0]
 
         collection = dl.AnnotationCollection()

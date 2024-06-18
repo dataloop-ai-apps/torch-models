@@ -2,17 +2,21 @@
 
 These are pytorch model adapters.
 
-1. ResNet50 (resnet_adapter.py)
+1. ResNet50 (adapters/resnet/resnet_adapter.py)
+2. DeepLabV3 (adapters/deeplabv3/model_adapter.py), for more information visit
+   here [documentation](adapters/deeplabv3/README.md).
 
 Full Model Management documentation [here](https://dataloop.ai/docs).
-Developers Documentation is [here](https://developers.dataloop.ai/tutorials/model_management/).  
+Developers Documentation is [here](https://developers.dataloop.ai/tutorials/model_management/).
 
 ## Clone Model to a Project
+
 You can clone the pretrained model to your project to work as-is.
 First get all the public model:
 
 ```python
 import dtlpy as dl
+
 filters = dl.Filters(resource=dl.FILTERS_RESOURCE_MODEL)
 filters.add(field='scope', values='public')
 
@@ -20,8 +24,10 @@ dl.models.list(filters=filters).print()
 ```
 
 Select the pretrained model you want to clone and... clone:
+
 ```python
 import dtlpy as dl
+
 public_model = dl.models.get(model_id='646dae2b6cd40e80856fe0f1')
 project = dl.projects.get('My Project')
 model = project.models.clone(from_model=public_model,
@@ -30,7 +36,9 @@ model = project.models.clone(from_model=public_model,
 ```
 
 ## Finetune
+
 If you want to finetune the model, you'll need to connect your dataset and train:
+
 ```python
 dataset = project.datasets.get('Capybaras')
 train_filter = dl.Filters(field='dir', values='/train')

@@ -34,9 +34,6 @@
       },
       {
         "name": "resnet-train-evaluate",
-        "versions": {
-          "dtlpy": "1.90.17"
-        },
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,

@@ -6,10 +6,11 @@
   "description": "ResNet Model Application",
   "attributes": {
     "Provider": "Dataloop",
+    "Deployed By": "Dataloop",
+    "License": "BSD-3.0",
     "Category": "Model",
     "Computer Vision": "Classification",
-    "Media Type": "Image",
-    "Libraries": "Torch"
+    "Media Type": "[Image]"
   },
   "codebase": {
     "type": "git",

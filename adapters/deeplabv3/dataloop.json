@@ -6,10 +6,11 @@
   "description": "DeepLabv3 is a deep learning model designed for semantic image segmentation, offering precise pixel-level classification and accurate object boundary.",
   "attributes": {
     "Provider": "Dataloop",
+    "Deployed By": "Dataloop",
+    "License": "BSD-3.0",
     "Category": "Model",
     "Computer Vision": "Semantic Segmentation",
-    "Media Type": "Image",
-    "Libraries": "Torch"
+    "Media Type": "[Image]"
   },
   "codebase": {
     "type": "git",

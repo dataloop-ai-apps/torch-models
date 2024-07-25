@@ -1,18 +1,18 @@
 {
-  "name": "resnet",
-  "displayName": "ResNet",
-  "version": "0.1.16",
-  "scope": "public",
-  "description": "ResNet Model Application",
+  "name": "mobilenetv3",
+  "displayName": "MobileNetV3",
+  "version": "0.0.1",
+  "scope": "project",
+  "description": "MobileNetV3 application for image classification.",
   "attributes": {
-    "Provider": "PyTorch",
-    "Deployed By": "Dataloop",
-    "License": "BSD-3.0",
+    "Provider": "Dataloop",
     "Category": "Model",
     "Computer Vision": "Classification",
     "Media Type": [
       "Image"
-    ]
+    ],
+    "Libraries": "Torch",
+    "Deployed By": "Dataloop"
   },
   "codebase": {
     "type": "git",
@@ -22,41 +22,48 @@
   "components": {
     "computeConfigs": [
       {
-        "name": "resnet-deploy",
+        "name": "mobilenetv3-deploy",
+        "versions": {
+          "dtlpy": "1.90.39"
+        },
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/modelmgmt/resnet:0.0.8",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.0",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
             "maxReplicas": 2,
-            "queueLength": 100
+            "queueLength": 10
           }
         }
       },
       {
-        "name": "resnet-train-evaluate",
+        "name": "mobilenetv3-train-evaluate",
+        "versions": {
+          "dtlpy": "1.90.39"
+        },
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/modelmgmt/resnet:0.0.8",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.0",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
             "maxReplicas": 2,
             "queueLength": 100
-          }
+          },
+          "executionTimeout": 36000000
         }
       }
     ],
     "modules": [
       {
-        "name": "resnet-module",
-        "entryPoint": "adapters/resnet/resnet_adapter.py",
-        "className": "ModelAdapter",
-        "computeConfig": "resnet-deploy",
-        "description": "ResNet Module",
+        "name": "mobilenetv3-module",
+        "entryPoint": "adapters/timm/timm_model_adapter.py",
+        "className": "TIMMAdapter",
+        "computeConfig": "mobilenetv3-deploy",
+        "description": "MobileNetV3 Classification Module",
         "initInputs": [
           {
             "type": "Model",
@@ -66,7 +73,7 @@
         "functions": [
           {
             "name": "evaluate_model",
-            "computeConfig": "resnet-train-evaluate",
+            "computeConfig": "mobilenetv3-train-evaluate",
             "input": [
               {
                 "type": "Model",
@@ -77,11 +84,6 @@
                 "type": "Dataset",
                 "name": "dataset",
                 "description": "Dataloop Dataset Entity"
-              },
-              {
-                "type": "Json",
-                "name": "filters",
-                "description": "Dataloop Filter DQL"
               }
             ],
             "output": [
@@ -98,7 +100,7 @@
             ],
             "displayName": "Evaluate a Model",
             "displayIcon": "",
-            "description": "Function to evaluate Resnet model performance"
+            "description": "Function to evaluate MobileNetV3 classification model performance"
           },
           {
             "name": "predict_items",
@@ -123,11 +125,30 @@
             ],
             "displayName": "Predict Items",
             "displayIcon": "",
-            "description": "Function to run Resnet inference on items"
+            "description": "Function to run MobileNetV3 classification inference on items"
+          },
+          {
+            "name": "predict_dataset",
+            "input": [
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": ""
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
+              }
+            ],
+            "output": [],
+            "displayName": "Predict Dataset",
+            "displayIcon": "",
+            "description": "Function to run MobileNetV3 inference on a dataset"
           },
           {
             "name": "train_model",
-            "computeConfig": "resnet-train-evaluate",
+            "computeConfig": "mobilenetv3-train-evaluate",
             "input": [
               {
                 "type": "Model",
@@ -144,50 +165,27 @@
             ],
             "displayName": "Train a Model",
             "displayIcon": "",
-            "description": "Function to train Resnet model"
-          },
-          {
-            "name": "predict_dataset",
-            "input": [
-              {
-                "type": "Dataset",
-                "name": "dataset",
-                "description": ""
-              },
-              {
-                "type": "Json",
-                "name": "filters",
-                "description": "Dataloop Filter DQL"
-              }
-            ],
-            "output": [
-            ],
-            "displayName": "Predict Dataset",
-            "displayIcon": "",
-            "description": "Function to run Resnet inference on a dataset"
+            "description": "Function to train MobileNetV3 classification model"
           }
         ]
       }
     ],
     "models": [
       {
-        "name": "pretrained-resnet",
-        "moduleName": "resnet-module",
+        "name": "mobilenetv3",
+        "moduleName": "mobilenetv3-module",
         "scope": "project",
         "status": "pre-trained",
         "configuration": {
+          "model_name": "mobilenetv3_large_100.ra_in1k",
           "weights_filename": "model.pth",
           "batch_size": 16,
-          "num_epochs": 10
+          "num_epochs": 10,
+          "input_size": 256
         },
-        "artifacts": [
-          {
-            "type": "link",
-            "url": "https://storage.googleapis.com/model-mgmt-snapshots/ResNet50/model.pth"
-          }
-        ],
         "inputType": "image",
-        "description": "Resnet model from The torchvision package consists of popular datasets, model architectures, and common image transformations for computer vision",
+        "outputType": "class",
+        "description": "MobileNetV3 is a state-of-the-art convolutional neural network for mobile and edge devices, designed for image classification.",
         "labels": [
           "tench, Tinca tinca",
           "goldfish, Carassius auratus",
@@ -1194,3 +1192,4 @@
     ]
   }
 }
+

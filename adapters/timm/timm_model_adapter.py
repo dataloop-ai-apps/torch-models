@@ -27,10 +27,11 @@ class TIMMAdapter(dl.BaseModelAdapter):
     MobileNetV3 Model adapter using Pytorch.
     The class bind Dataloop model and model entities with model code implementation
     """
-    def __init__(self, model_entity=None):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model_name = self.configuration.get('model_name')
+
+    def __init__(self, model_entity: dl.Model):
         super(TIMMAdapter, self).__init__(model_entity=model_entity)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.model_name = self.model_entity.configuration.get('model_name')
 
     def load(self, local_path, **kwargs):
         """ Loads model and populates self.model with a `runnable` model

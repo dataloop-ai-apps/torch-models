@@ -6,6 +6,7 @@ RUN pip3 install --upgrade pip
 
 COPY /requirements.txt .
 
+RUN apt-get install -y curl
 RUN pip install -r requirements.txt
 
 # docker build -t gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.0 -f ./Dockerfile  .

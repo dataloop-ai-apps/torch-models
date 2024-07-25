@@ -1,7 +1,7 @@
 {
   "name": "efficientnet",
   "displayName": "EfficientNet",
-  "version": "0.0.1",
+  "version": "0.1.16",
   "scope": "project",
   "description": "EfficientNet application for image classification.",
   "attributes": {

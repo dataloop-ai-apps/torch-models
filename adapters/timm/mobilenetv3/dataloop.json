@@ -1,7 +1,7 @@
 {
   "name": "mobilenetv3",
   "displayName": "MobileNetV3",
-  "version": "0.0.1",
+  "version": "0.1.16",
   "scope": "project",
   "description": "MobileNetV3 application for image classification.",
   "attributes": {

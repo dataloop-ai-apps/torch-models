@@ -29,9 +29,8 @@ class TIMMAdapter(dl.BaseModelAdapter):
     """
 
     def __init__(self, model_entity: dl.Model):
-        super().__init__(model_entity)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model_name = self.model_entity.configuration.get('model_name')
+        super().__init__(model_entity)
 
     def load(self, local_path, **kwargs):
         """ Loads model and populates self.model with a `runnable` model
@@ -52,7 +51,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
             logger.info(f"Loaded model from {model_path} successfully")
         else:
             # With the model from the library
-            self.model = timm.create_model(self.model_name, pretrained=True)
+            self.model = timm.create_model(self.configuration.get('model_name'), pretrained=True)
             self.model.to(self.device)
             self.model.eval()
             logger.info(f"Loaded model from library successfully")

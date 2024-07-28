@@ -46,15 +46,13 @@ class TIMMAdapter(dl.BaseModelAdapter):
 
             logger.info(f"Loading a model from {model_path}")
             self.model = torch.load(model_path, map_location=self.device)
-            self.model.to(self.device)
-            self.model.eval()
             logger.info(f"Loaded model from {model_path} successfully")
         else:
             # With the model from the library
             self.model = timm.create_model(self.configuration.get('model_name'), pretrained=True)
-            self.model.to(self.device)
-            self.model.eval()
             logger.info(f"Loaded model from library successfully")
+        self.model.to(self.device)
+        self.model.eval()
 
     def save(self, local_path, **kwargs):
         """ Saves configuration and weights locally

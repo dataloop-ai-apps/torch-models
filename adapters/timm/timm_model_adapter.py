@@ -16,7 +16,7 @@ import copy
 from dtlpy.utilities.dataset_generators.dataset_generator import collate_torch
 from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGeneratorTorch
 
-logger = logging.getLogger('MobileNetV3-adapter')
+logger = logging.getLogger('TIMM-adapter')
 
 
 @dl.Package.decorators.module(name='model-adapter',
@@ -24,12 +24,12 @@ logger = logging.getLogger('MobileNetV3-adapter')
                               init_inputs={'model_entity': dl.Model})
 class TIMMAdapter(dl.BaseModelAdapter):
     """
-    MobileNetV3 Model adapter using Pytorch.
+    TIMM Model adapter using Pytorch.
     The class bind Dataloop model and model entities with model code implementation
     """
 
     def __init__(self, model_entity: dl.Model):
-        super(TIMMAdapter, self).__init__(model_entity=model_entity)
+        super().__init__(model_entity)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model_name = self.model_entity.configuration.get('model_name')
 
@@ -348,12 +348,12 @@ class TIMMAdapter(dl.BaseModelAdapter):
         subsets = self.model_entity.metadata.get("system", dict()).get("subsets", None)
         if 'train' not in subsets:
             raise ValueError(
-                'Couldnt find train set. MobileNetV3 requires train and validation set for training. '
+                'Couldnt find train set. TIMM model requires train and validation set for training. '
                 'Add a train set DQL filter in the dl.Model metadata'
             )
         if 'validation' not in subsets:
             raise ValueError(
-                'Couldnt find validation set. MobileNetV3 requires train and validation set for training. '
+                'Couldnt find validation set. TIMM model requires train and validation set for training. '
                 'Add a validation set DQL filter in the dl.Model metadata'
             )
         return

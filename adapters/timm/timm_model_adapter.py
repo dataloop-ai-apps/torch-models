@@ -29,6 +29,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
     """
 
     def __init__(self, model_entity: dl.Model):
+        self.timm_pred_transforms = None
         self.timm_val_transforms = None
         self.timm_train_transforms = None
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -55,7 +56,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
             logger.info(f"Loaded model from library successfully")
         self.model.to(self.device)
         self.model.eval()
-        
+
         # Get model specific transforms (normalization, resize)
         data_config = timm.data.resolve_model_data_config(self.model)
         self.timm_train_transforms = timm.data.create_transform(**data_config, is_training=True)
@@ -78,23 +79,13 @@ class TIMMAdapter(dl.BaseModelAdapter):
         :param batch: `np.ndarray`
         :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
         """
-        input_size = self.configuration.get('input_size', 256)
-
-        self.timm_transforms = self.timm_val_transforms
+        self.timm_pred_transforms = self.timm_val_transforms
 
         # Create composed transforms
         preprocess = transforms.Compose([
             transforms.ToPILImage(),
-            *self.timm_transforms.transforms
+            *self.timm_pred_transforms.transforms
         ])
-
-        # preprocess = transforms.Compose([
-        #     transforms.ToPILImage(),
-        #     transforms.Resize((input_size, input_size)),
-        #     transforms.CenterCrop(224),
-        #     transforms.ToTensor(),
-        #     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        # ])
 
         img_tensors = [preprocess(img.astype('uint8')) for img in batch]
         batch_tensor = torch.stack(img_tensors).to(self.device)
@@ -121,12 +112,10 @@ class TIMMAdapter(dl.BaseModelAdapter):
         """
         num_epochs = self.configuration.get('num_epochs', 10)
         batch_size = self.configuration.get('batch_size', 64)
-        input_size = self.configuration.get('input_size', 256)
         on_epoch_end_callback = kwargs.get('on_epoch_end_callback')
 
         data_transforms = {
             'train': transforms.Compose([
-                iaa.Resize({"height": input_size, "width": input_size}),
                 iaa.flip.Fliplr(p=0.5),
                 iaa.flip.Flipud(p=0.2),
                 transforms.ToPILImage(),
@@ -137,23 +126,6 @@ class TIMMAdapter(dl.BaseModelAdapter):
                 *self.timm_val_transforms.transforms
             ])
         }
-
-        # data_transforms = {
-        #     'train': [
-        #         iaa.Resize({"height": input_size, "width": input_size}),
-        #         iaa.flip.Fliplr(p=0.5),
-        #         iaa.flip.Flipud(p=0.2),
-        #         transforms.ToPILImage(),
-        #         transforms.ToTensor(),
-        #         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        #     ],
-        #     'val': [
-        #         transforms.ToPILImage(),
-        #         transforms.Resize((input_size, input_size)),
-        #         transforms.ToTensor(),
-        #         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        #     ]
-        # }
 
         ####################
         # Prepare the data #

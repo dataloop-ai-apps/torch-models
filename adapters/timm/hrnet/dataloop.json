@@ -1,7 +1,7 @@
 {
   "name": "hrnet",
   "displayName": "HRNet",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "scope": "project",
   "description": "HRNet application for image classification.",
   "attributes": {

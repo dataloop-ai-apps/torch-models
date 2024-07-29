@@ -1,7 +1,7 @@
 {
   "name": "resnet",
   "displayName": "ResNet",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "scope": "project",
   "description": "ResNet application for image classification.",
   "attributes": {

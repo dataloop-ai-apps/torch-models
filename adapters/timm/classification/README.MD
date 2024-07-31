@@ -14,7 +14,7 @@ Various models and their variants can be used. To switch models, edit the model 
 - HRNet (default: 'hrnet_w18.ms_aug_in1k')
 - MobileNet (default: 'mobilenetv3_large_100.ra_in1k')
 
-Other variants from these models can be found [here](https://huggingface.co/models?pipeline_tag=image-classification&library=timm) and used if trained or fine-tuned on ImageNet1k can also be used.
+Other variants from these models can be found [here](https://huggingface.co/models?pipeline_tag=image-classification&library=timm) and used if trained or fine-tuned on ImageNet1k.
 
 ## Requirements
 

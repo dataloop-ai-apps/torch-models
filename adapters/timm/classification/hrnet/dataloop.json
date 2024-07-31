@@ -1,9 +1,9 @@
 {
-  "name": "resnet",
-  "displayName": "ResNet",
+  "name": "hrnet",
+  "displayName": "HRNet",
   "version": "0.1.17",
   "scope": "public",
-  "description": "ResNet Model Application",
+  "description": "HRNet application for image classification.",
   "attributes": {
     "Provider": "PyTorch",
     "Deployed By": "Dataloop",
@@ -12,17 +12,18 @@
     "Computer Vision": "Classification",
     "Media Type": [
       "Image"
-    ]
+    ],
+    "Libraries": "Torch"
   },
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.17"
+    "gitTag": "0.1.16"
   },
   "components": {
     "computeConfigs": [
       {
-        "name": "resnet-deploy",
+        "name": "hrnet-deploy",
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
@@ -31,12 +32,15 @@
             "type": "rabbitmq",
             "minReplicas": 0,
             "maxReplicas": 2,
-            "queueLength": 100
+            "queueLength": 10
           }
         }
       },
       {
-        "name": "resnet-train-evaluate",
+        "name": "hrnet-train-evaluate",
+        "versions": {
+          "dtlpy": "1.90.39"
+        },
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
@@ -46,17 +50,18 @@
             "minReplicas": 0,
             "maxReplicas": 2,
             "queueLength": 100
-          }
+          },
+          "executionTimeout": 36000000
         }
       }
     ],
     "modules": [
       {
-        "name": "resnet-module",
-        "entryPoint": "adapters/resnet/resnet_adapter.py",
-        "className": "ModelAdapter",
-        "computeConfig": "resnet-deploy",
-        "description": "ResNet Module",
+        "name": "hrnet-module",
+        "entryPoint": "adapters/timm/classification/timm_model_adapter.py",
+        "className": "TIMMAdapter",
+        "computeConfig": "hrnet-deploy",
+        "description": "HRNet Classification Module",
         "initInputs": [
           {
             "type": "Model",
@@ -66,7 +71,7 @@
         "functions": [
           {
             "name": "evaluate_model",
-            "computeConfig": "resnet-train-evaluate",
+            "computeConfig": "hrnet-train-evaluate",
             "input": [
               {
                 "type": "Model",
@@ -77,11 +82,6 @@
                 "type": "Dataset",
                 "name": "dataset",
                 "description": "Dataloop Dataset Entity"
-              },
-              {
-                "type": "Json",
-                "name": "filters",
-                "description": "Dataloop Filter DQL"
               }
             ],
             "output": [
@@ -98,7 +98,7 @@
             ],
             "displayName": "Evaluate a Model",
             "displayIcon": "",
-            "description": "Function to evaluate Resnet model performance"
+            "description": "Function to evaluate HRNet classification model performance"
           },
           {
             "name": "predict_items",
@@ -123,11 +123,30 @@
             ],
             "displayName": "Predict Items",
             "displayIcon": "",
-            "description": "Function to run Resnet inference on items"
+            "description": "Function to run HRNet classification inference on items"
+          },
+          {
+            "name": "predict_dataset",
+            "input": [
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": ""
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
+              }
+            ],
+            "output": [],
+            "displayName": "Predict Dataset",
+            "displayIcon": "",
+            "description": "Function to run HRNet inference on a dataset"
           },
           {
             "name": "train_model",
-            "computeConfig": "resnet-train-evaluate",
+            "computeConfig": "hrnet-train-evaluate",
             "input": [
               {
                 "type": "Model",
@@ -144,50 +163,26 @@
             ],
             "displayName": "Train a Model",
             "displayIcon": "",
-            "description": "Function to train Resnet model"
-          },
-          {
-            "name": "predict_dataset",
-            "input": [
-              {
-                "type": "Dataset",
-                "name": "dataset",
-                "description": ""
-              },
-              {
-                "type": "Json",
-                "name": "filters",
-                "description": "Dataloop Filter DQL"
-              }
-            ],
-            "output": [
-            ],
-            "displayName": "Predict Dataset",
-            "displayIcon": "",
-            "description": "Function to run Resnet inference on a dataset"
+            "description": "Function to train HRNet classification model"
           }
         ]
       }
     ],
     "models": [
       {
-        "name": "pretrained-resnet",
-        "moduleName": "resnet-module",
+        "name": "hrnet",
+        "moduleName": "hrnet-module",
         "scope": "project",
         "status": "pre-trained",
         "configuration": {
+          "model_name": "hrnet_w18.ms_aug_in1k",
           "weights_filename": "model.pth",
           "batch_size": 16,
           "num_epochs": 10
         },
-        "artifacts": [
-          {
-            "type": "link",
-            "url": "https://storage.googleapis.com/model-mgmt-snapshots/ResNet50/model.pth"
-          }
-        ],
         "inputType": "image",
-        "description": "Resnet model from The torchvision package consists of popular datasets, model architectures, and common image transformations for computer vision",
+        "outputType": "class",
+        "description": "HRNet for image classification maintains high-resolution representations through parallel convolutions and multi-resolution information exchange, resulting in enhanced accuracy and robustness in classifying images.",
         "labels": [
           "tench, Tinca tinca",
           "goldfish, Carassius auratus",
@@ -1194,3 +1189,4 @@
     ]
   }
 }
+

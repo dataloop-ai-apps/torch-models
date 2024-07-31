@@ -1,18 +1,19 @@
 {
-  "name": "mobilenetv3",
-  "displayName": "MobileNetV3",
+  "name": "mobilenet",
+  "displayName": "MobileNet",
   "version": "0.1.17",
-  "scope": "project",
-  "description": "MobileNetV3 application for image classification.",
+  "scope": "public",
+  "description": "MobileNet application for image classification.",
   "attributes": {
-    "Provider": "Dataloop",
+    "Provider": "PyTorch",
+    "Deployed By": "Dataloop",
+    "License": "BSD-3.0",
     "Category": "Model",
     "Computer Vision": "Classification",
     "Media Type": [
       "Image"
     ],
-    "Libraries": "Torch",
-    "Deployed By": "Dataloop"
+    "Libraries": "Torch"
   },
   "codebase": {
     "type": "git",
@@ -22,10 +23,7 @@
   "components": {
     "computeConfigs": [
       {
-        "name": "mobilenetv3-deploy",
-        "versions": {
-          "dtlpy": "1.90.39"
-        },
+        "name": "mobilenet-deploy",
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
@@ -39,7 +37,7 @@
         }
       },
       {
-        "name": "mobilenetv3-train-evaluate",
+        "name": "mobilenet-train-evaluate",
         "versions": {
           "dtlpy": "1.90.39"
         },
@@ -59,11 +57,11 @@
     ],
     "modules": [
       {
-        "name": "mobilenetv3-module",
-        "entryPoint": "adapters/timm/timm_model_adapter.py",
+        "name": "mobilenet-module",
+        "entryPoint": "adapters/timm/classification/timm_model_adapter.py",
         "className": "TIMMAdapter",
-        "computeConfig": "mobilenetv3-deploy",
-        "description": "MobileNetV3 Classification Module",
+        "computeConfig": "mobilenet-deploy",
+        "description": "MobileNet Classification Module",
         "initInputs": [
           {
             "type": "Model",
@@ -73,7 +71,7 @@
         "functions": [
           {
             "name": "evaluate_model",
-            "computeConfig": "mobilenetv3-train-evaluate",
+            "computeConfig": "mobilenet-train-evaluate",
             "input": [
               {
                 "type": "Model",
@@ -100,7 +98,7 @@
             ],
             "displayName": "Evaluate a Model",
             "displayIcon": "",
-            "description": "Function to evaluate MobileNetV3 classification model performance"
+            "description": "Function to evaluate MobileNet classification model performance"
           },
           {
             "name": "predict_items",
@@ -125,7 +123,7 @@
             ],
             "displayName": "Predict Items",
             "displayIcon": "",
-            "description": "Function to run MobileNetV3 classification inference on items"
+            "description": "Function to run MobileNet classification inference on items"
           },
           {
             "name": "predict_dataset",
@@ -144,11 +142,11 @@
             "output": [],
             "displayName": "Predict Dataset",
             "displayIcon": "",
-            "description": "Function to run MobileNetV3 inference on a dataset"
+            "description": "Function to run MobileNet inference on a dataset"
           },
           {
             "name": "train_model",
-            "computeConfig": "mobilenetv3-train-evaluate",
+            "computeConfig": "mobilenet-train-evaluate",
             "input": [
               {
                 "type": "Model",
@@ -165,27 +163,26 @@
             ],
             "displayName": "Train a Model",
             "displayIcon": "",
-            "description": "Function to train MobileNetV3 classification model"
+            "description": "Function to train MobileNet classification model"
           }
         ]
       }
     ],
     "models": [
       {
-        "name": "mobilenetv3",
-        "moduleName": "mobilenetv3-module",
+        "name": "mobilenet",
+        "moduleName": "mobilenet-module",
         "scope": "project",
         "status": "pre-trained",
         "configuration": {
           "model_name": "mobilenetv3_large_100.ra_in1k",
           "weights_filename": "model.pth",
           "batch_size": 16,
-          "num_epochs": 10,
-          "input_size": 256
+          "num_epochs": 10
         },
         "inputType": "image",
         "outputType": "class",
-        "description": "MobileNetV3 is a state-of-the-art convolutional neural network for mobile and edge devices, designed for image classification.",
+        "description": "MobileNet is a state-of-the-art convolutional neural network for mobile and edge devices, designed for image classification.",
         "labels": [
           "tench, Tinca tinca",
           "goldfish, Carassius auratus",

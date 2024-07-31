@@ -2,16 +2,18 @@
   "name": "efficientnet",
   "displayName": "EfficientNet",
   "version": "0.1.17",
-  "scope": "project",
+  "scope": "public",
   "description": "EfficientNet application for image classification.",
   "attributes": {
-    "Provider": "Dataloop",
+    "Provider": "PyTorch",
+    "Deployed By": "Dataloop",
+    "License": "BSD-3.0",
     "Category": "Model",
     "Computer Vision": "Classification",
     "Media Type": [
-      "Image"],
-    "Libraries": "Torch",
-    "Deployed By": "Dataloop"
+      "Image"
+    ],
+    "Libraries": "Torch"
   },
   "codebase": {
     "type": "git",
@@ -22,9 +24,6 @@
     "computeConfigs": [
       {
         "name": "efficientnet-deploy",
-        "versions": {
-          "dtlpy": "1.90.39"
-        },
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
@@ -59,7 +58,7 @@
     "modules": [
       {
         "name": "efficientnet-module",
-        "entryPoint": "adapters/timm/timm_model_adapter.py",
+        "entryPoint": "adapters/timm/classification/timm_model_adapter.py",
         "className": "TIMMAdapter",
         "computeConfig": "efficientnet-deploy",
         "description": "EfficientNet Classification Module",
@@ -179,8 +178,7 @@
           "model_name": "efficientnetv2_rw_s.ra2_in1k",
           "weights_filename": "model.pth",
           "batch_size": 16,
-          "num_epochs": 10,
-          "input_size": 256
+          "num_epochs": 10
         },
         "inputType": "image",
         "outputType": "class",

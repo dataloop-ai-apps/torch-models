@@ -11,5 +11,5 @@ COPY /requirements.txt .
 
 RUN pip install -r requirements.txt
 
-# docker build -t gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.1 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.1
+# docker build -t gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.2 -f ./Dockerfile  .
+# docker push gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.2

@@ -34,12 +34,12 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
         :param local_path: `str` directory path in local FileSystem
         """
         # Load languages from JSON file
-        json_path = os.path.join(local_path, 'languages_labels.json')
+        json_path = os.path.join(os.getcwd(), 'languages_labels.json')
         with open(json_path, 'r') as f:
             data = json.load(f)
-            self.languages_list = data.get('languages', [])
-            if not self.languages_list:
-                logger.warning("Languages list is empty or not found in JSON file.")
+        self.languages_list = data.get('languages', [])
+        if not self.languages_list:
+            raise Exception("Languages list is empty or not found in JSON file.")
         self.model = EncoderClassifier.from_hparams(source="speechbrain/lang-id-voxlingua107-ecapa",
                                                     savedir="pretrained_models/lang-id-voxlingua107-ecapa")
         logger.info(f"Loaded model from library successfully")

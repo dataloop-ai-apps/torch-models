@@ -12,13 +12,12 @@
     "Computer Vision": "Classification",
     "Media Type": [
       "Image"
-    ],
-    "Libraries": "Torch"
+    ]
   },
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.16"
+    "gitTag": "0.1.17"
   },
   "components": {
     "computeConfigs": [

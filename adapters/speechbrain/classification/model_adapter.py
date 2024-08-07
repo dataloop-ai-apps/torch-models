@@ -1,3 +1,4 @@
+import json
 import os
 import torch
 import torchvision
@@ -6,8 +7,8 @@ import dtlpy as dl
 import torch.nn.functional
 import torch.nn
 import logging
-from speechbrain.inference import EncoderClassifier
 import soundfile
+from speechbrain.inference import EncoderClassifier
 
 logger = logging.getLogger('EncoderClassifier-adapter')
 
@@ -32,6 +33,13 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
+        # Load languages from JSON file
+        json_path = os.path.join(local_path, 'languages_labels.json')
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+            self.languages_list = data.get('languages', [])
+            if not self.languages_list:
+                logger.warning("Languages list is empty or not found in JSON file.")
         self.model = EncoderClassifier.from_hparams(source="speechbrain/lang-id-voxlingua107-ecapa",
                                                     savedir="pretrained_models/lang-id-voxlingua107-ecapa")
         logger.info(f"Loaded model from library successfully")
@@ -68,22 +76,41 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
             prediction = self.model(signal)
             logger.info(f'Encoder Classifier predicting {filename}, done.')
 
-            best_language = prediction[3][0].split(': ')[-1]
-
             # Convert log-likelihoods to linear-scale likelihoods
-            linear_likelihoods = prediction[0].exp()
+            log_likelihoods = prediction[0][0]
+            linear_likelihoods = log_likelihoods.exp()
 
-            # Find the index of the highest likelihood
-            best_language_index = linear_likelihoods.argmax()
+            # Find the indices of the languages with the highest likelihoods
+            sorted_indices = linear_likelihoods.argsort(descending=True)
 
-            # Calculate the confidence score as the normalized likelihood of the most likely language
-            confidence = linear_likelihoods[0][best_language_index] / linear_likelihoods.sum()
+            # Initialize list for languages with confidence > 30%
+            best_languages = set()
+            confidences = set()
+
+            # Calculate the total sum of linear likelihoods
+            total_likelihood = linear_likelihoods.sum()
+
+            # Check confidence for the top 3 languages
+            for idx in sorted_indices[:3]:
+                confidence = linear_likelihoods[int(idx)] / total_likelihood
+                if float(confidence) > 0.30:
+                    confidences.add(confidence)
+                    best_languages.add(self.languages_list[idx])
+            best_languages_list = list(best_languages)
+            confidences_list = list(confidences)
+
+            if len(best_languages_list) == 0:
+                best_language_index = linear_likelihoods.argmax()
+                confidence = linear_likelihoods[int(best_language_index)] / total_likelihood
+                confidences_list.append(confidence)
+                best_languages_list.append(self.languages_list[best_language_index])
 
             collection = dl.AnnotationCollection()
-            collection.add(annotation_definition=dl.Classification(label=best_language),
-                           model_info={'name': self.model_entity.name,
-                                       'confidence': confidence,
-                                       'model_id': self.model_entity.id})
-            logger.debug(f"Predicted {best_language} with confidence {round(float(confidence),2)}.")
-            batch_annotations.append(collection)
+            for label, confidence in zip(best_languages_list, confidences_list):
+                collection.add(annotation_definition=dl.Classification(label=label),
+                               model_info={'name': self.model_entity.name,
+                                           'confidence': confidence,
+                                           'model_id': self.model_entity.id})
+                logger.debug(f"Predicted {label} with confidence {round(float(confidence), 2)}.")
+                batch_annotations.append(collection)
         return batch_annotations

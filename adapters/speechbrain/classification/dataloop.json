@@ -9,16 +9,15 @@
     "Deployed By": "Dataloop",
     "License": "Apache 2.0",
     "Category": "Model",
-    "Audio classification": "Classification",
+    "Audio": "Audio classification",
     "Media Type": [
       "Audio"
-    ],
-    "Libraries": "Torch"
+    ]
   },
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.16"
+    "gitTag": "0.1.17"
   },
   "components": {
     "computeConfigs": [
@@ -143,27 +142,6 @@
             "displayName": "Predict Dataset",
             "displayIcon": "",
             "description": "Function to run SpeechBrain Encoder Classifier inference on a dataset"
-          },
-          {
-            "name": "train_model",
-            "computeConfig": "encoderclassifier-train-evaluate",
-            "input": [
-              {
-                "type": "Model",
-                "name": "model",
-                "description": "Dataloop Model Entity"
-              }
-            ],
-            "output": [
-              {
-                "type": "Model",
-                "name": "model",
-                "description": "Dataloop Model Entity"
-              }
-            ],
-            "displayName": "Train a Model",
-            "displayIcon": "",
-            "description": "Function to train SpeechBrain Encoder Classifier classification model"
           }
         ]
       }

@@ -57,7 +57,7 @@
     "modules": [
       {
         "name": "encoderclassifier-module",
-        "entryPoint": "adapters/speechbrain/classification/model_adapter.py",
+        "entryPoint": "adapters/speechbrain/classification/language_identification_adapter.py",
         "className": "EncoderClassifierAdapter",
         "computeConfig": "encoderclassifier-deploy",
         "description": "EncoderClassifier Classification Module",

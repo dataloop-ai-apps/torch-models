@@ -1,0 +1,162 @@
+{
+  "name": "encoderclassifier",
+  "displayName": "Language Classifier",
+  "version": "0.1.19",
+  "scope": "public",
+  "description": "SpeechBrain application for audio language classification.",
+  "attributes": {
+    "Provider": "SpeechBrain",
+    "Deployed By": "Dataloop",
+    "License": "Apache 2.0",
+    "Category": "Model",
+    "Audio": "Audio classification",
+    "Media Type": [
+      "Audio"
+    ]
+  },
+  "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
+    "gitTag": "0.1.19"
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "encoderclassifier-deploy",
+        "runtime": {
+          "podType": "regular-xs",
+          "concurrency": 1,
+          "runnerImage": "gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.2",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        }
+      },
+      {
+        "name": "encoderclassifier-train-evaluate",
+        "versions": {
+          "dtlpy": "1.90.39"
+        },
+        "runtime": {
+          "podType": "gpu-t4",
+          "concurrency": 1,
+          "runnerImage": "gcr.io/viewo-g/piper/agent/gpu/torch-models:0.1.2",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 100
+          },
+          "executionTimeout": 36000000
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "encoderclassifier-module",
+        "entryPoint": "adapters/speechbrain/classification/model_adapter.py",
+        "className": "EncoderClassifierAdapter",
+        "computeConfig": "encoderclassifier-deploy",
+        "description": "EncoderClassifier Classification Module",
+        "initInputs": [
+          {
+            "type": "Model",
+            "name": "model_entity"
+          }
+        ],
+        "functions": [
+          {
+            "name": "evaluate_model",
+            "computeConfig": "encoderclassifier-train-evaluate",
+            "input": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              },
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": "Dataloop Dataset Entity"
+              }
+            ],
+            "output": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              },
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": "Dataloop Dataset Entity"
+              }
+            ],
+            "displayName": "Evaluate a Model",
+            "displayIcon": "",
+            "description": "Function to evaluate SpeechBrain Encoder Classifier classification model performance"
+          },
+          {
+            "name": "predict_items",
+            "input": [
+              {
+                "type": "Item[]",
+                "name": "items",
+                "description": "List of items to run inference on"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item[]",
+                "name": "items",
+                "description": "The same input images for prediction."
+              },
+              {
+                "type": "Annotation[]",
+                "name": "annotations",
+                "description": "The predicted annotations."
+              }
+            ],
+            "displayName": "Predict Items",
+            "displayIcon": "",
+            "description": "Function to run SpeechBrain Encoder Classifier classification inference on items"
+          },
+          {
+            "name": "predict_dataset",
+            "input": [
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": ""
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
+              }
+            ],
+            "output": [],
+            "displayName": "Predict Dataset",
+            "displayIcon": "",
+            "description": "Function to run SpeechBrain Encoder Classifier inference on a dataset"
+          }
+        ]
+      }
+    ],
+    "models": [
+      {
+        "name": "encoderclassifier",
+        "moduleName": "encoderclassifier-module",
+        "scope": "project",
+        "status": "pre-trained",
+        "inputType": "audio",
+        "outputType": "class",
+        "description": "EncoderClassifier is a component of the SpeechBrain library that uses pre-trained neural network models for efficient and accurate classification of audio data."
+      }
+    ]
+  }
+}
+

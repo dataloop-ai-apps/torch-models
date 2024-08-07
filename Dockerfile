@@ -1,4 +1,4 @@
-FROM gcr.io/viewo-g/piper/agent/runner/gpu/main:latest
+FROM dataloopai/dtlpy-agent:gpu.cuda.11.8.py3.10.pytorch2
 USER root
 
 RUN apt update && apt install -y curl

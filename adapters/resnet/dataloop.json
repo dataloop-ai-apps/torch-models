@@ -1,7 +1,7 @@
 {
   "name": "resnet",
   "displayName": "ResNet",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "scope": "public",
   "description": "ResNet Model Application",
   "attributes": {
@@ -17,7 +17,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.26"
+    "gitTag": "0.1.27"
   },
   "components": {
     "computeConfigs": [

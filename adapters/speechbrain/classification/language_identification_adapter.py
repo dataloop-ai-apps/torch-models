@@ -9,6 +9,7 @@ import torch.nn
 import logging
 import soundfile
 from speechbrain.inference import EncoderClassifier
+import pathlib
 
 logger = logging.getLogger('EncoderClassifier-adapter')
 
@@ -34,7 +35,9 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
         :param local_path: `str` directory path in local FileSystem
         """
         # Load languages from JSON file
-        with open('languages_labels.json', 'r') as f:
+        json_path = pathlib.Path(__file__).parent / pathlib.Path('languages_labels.json')
+        json_path = str(json_path.resolve())
+        with open(json_path, 'r') as f:
             data = json.load(f)
         self.languages_list = data.get('languages', [])
         if not self.languages_list:

@@ -6,7 +6,7 @@ RUN apt update && apt install -y curl
 USER 1000
 ENV HOME=/tmp
 RUN python3 -m pip install --upgrade pip
-RUN pip install --user 'torch==2.0.1' 'torchvision==0.15.2' 'torchaudio==2.4.0'
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 COPY /requirements.txt .
 

@@ -34,8 +34,7 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
         :param local_path: `str` directory path in local FileSystem
         """
         # Load languages from JSON file
-        json_path = os.path.join(os.getcwd(), 'languages_labels.json')
-        with open(json_path, 'r') as f:
+        with open('languages_labels.json', 'r') as f:
             data = json.load(f)
         self.languages_list = data.get('languages', [])
         if not self.languages_list:

@@ -99,5 +99,5 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
                                            'confidence': confidence,
                                            'model_id': self.model_entity.id})
                 logger.debug(f"Predicted {label} with confidence {round(float(confidence), 2)}.")
-                batch_annotations.append(collection)
+            batch_annotations.append(collection)
         return batch_annotations

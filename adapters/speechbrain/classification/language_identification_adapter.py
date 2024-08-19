@@ -25,6 +25,10 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
 
     def __init__(self, model_entity: dl.Model):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.confidence_thresh = self.configuration.get('conf_thresh', 0.3)
+        self.languages_list = self.model_entity.labels
+        if not self.languages_list:
+            raise Exception("Languages list is empty or not found in JSON file.")
         super().__init__(model_entity)
 
     def load(self, local_path, **kwargs):
@@ -34,14 +38,6 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
-        # Load languages from JSON file
-        json_path = pathlib.Path(__file__).parent / pathlib.Path('languages_labels.json')
-        json_path = str(json_path.resolve())
-        with open(json_path, 'r') as f:
-            data = json.load(f)
-        self.languages_list = data.get('languages', [])
-        if not self.languages_list:
-            raise Exception("Languages list is empty or not found in JSON file.")
         self.model = EncoderClassifier.from_hparams(source="speechbrain/lang-id-voxlingua107-ecapa",
                                                     savedir="pretrained_models/lang-id-voxlingua107-ecapa")
         logger.info(f"Loaded model from library successfully")
@@ -50,17 +46,6 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
 
     def prepare_item_func(self, item):
         return item
-
-    def save(self, local_path, **kwargs):
-        """ Saves configuration and weights locally
-
-            The function is called in save_to_model which first save locally and then uploads to model entity
-
-        :param local_path: `str` directory path in local FileSystem
-        """
-        weights_filename = kwargs.get('weights_filename', 'model.pth')
-        torch.save(self.model, os.path.join(local_path, weights_filename))
-        self.configuration['weights_filename'] = weights_filename
 
     def predict(self, batch: [dl.Item], **kwargs):
         """ Model inference (predictions) on batch of audio files
@@ -95,7 +80,7 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
             # Check confidence for the top 3 languages
             for idx in sorted_indices[:3]:
                 confidence = linear_likelihoods[int(idx)] / total_likelihood
-                if float(confidence) > 0.30:
+                if float(confidence) > self.confidence_thresh:
                     confidences.add(confidence)
                     best_languages.add(self.languages_list[idx])
             best_languages_list = list(best_languages)

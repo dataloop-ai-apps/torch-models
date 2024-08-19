@@ -1,5 +1,5 @@
 {
-  "name": "encoderclassifier",
+  "name": "language-classifier",
   "displayName": "Language Classifier",
   "version": "0.1.27",
   "scope": "public",
@@ -22,7 +22,7 @@
   "components": {
     "computeConfigs": [
       {
-        "name": "encoderclassifier-deploy",
+        "name": "language-classifier-deploy",
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
@@ -36,7 +36,7 @@
         }
       },
       {
-        "name": "encoderclassifier-train-evaluate",
+        "name": "language-classifier-train-evaluate",
         "versions": {
           "dtlpy": "1.90.39"
         },
@@ -56,11 +56,11 @@
     ],
     "modules": [
       {
-        "name": "encoderclassifier-module",
+        "name": "language-classifier-module",
         "entryPoint": "adapters/speechbrain/classification/language_identification_adapter.py",
-        "className": "EncoderClassifierAdapter",
-        "computeConfig": "encoderclassifier-deploy",
-        "description": "EncoderClassifier Classification Module",
+        "className": "LanguageClassifierAdapter",
+        "computeConfig": "language-classifier-deploy",
+        "description": "LanguageClassifier Classification Module",
         "initInputs": [
           {
             "type": "Model",
@@ -70,7 +70,7 @@
         "functions": [
           {
             "name": "evaluate_model",
-            "computeConfig": "encoderclassifier-train-evaluate",
+            "computeConfig": "language-classifier-train-evaluate",
             "input": [
               {
                 "type": "Model",
@@ -148,13 +148,29 @@
     ],
     "models": [
       {
-        "name": "encoderclassifier",
-        "moduleName": "encoderclassifier-module",
+        "name": "language-classifier",
+        "moduleName": "language-classifier-module",
         "scope": "project",
         "status": "pre-trained",
         "inputType": "audio",
         "outputType": "class",
-        "description": "EncoderClassifier is a component of the SpeechBrain library that uses pre-trained neural network models for efficient and accurate classification of audio data."
+        "description": "EncoderClassifier is a component of the SpeechBrain library that uses pre-trained neural network models for efficient and accurate classification of audio data.",
+        "configuration": {
+          "conf_thresh": 0.3
+        },
+        "labels": [
+          "Abkhazian", "Afrikaans", "Amharic", "Arabic", "Assamese", "Azerbaijani", "Bashkir", "Belarusian",
+          "Bulgarian", "Bengali", "Tibetan", "Breton", "Bosnian", "Catalan", "Cebuano", "Czech", "Welsh", "Danish",
+          "German", "Greek",  "English", "Esperanto", "Spanish", "Estonian", "Basque", "Persian", "Finnish", "Faroese", "French",
+          "Galician", "Guarani", "Gujarati", "Manx", "Hausa", "Hawaiian", "Hindi", "Croatian", "Haitian", "Hungarian", "Armenian",
+          "Interlingua", "Indonesian", "Icelandic", "Italian", "Hebrew", "Japanese", "Javanese", "Georgian", "Kazakh",
+          "Central Khmer", "Kannada", "Korean", "Latin", "Luxembourgish", "Lingala", "Lao", "Lithuanian", "Latvian",
+          "Malagasy", "Maori", "Macedonian", "Malayalam", "Mongolian", "Marathi", "Malay", "Maltese", "Burmese",
+          "Nepali", "Dutch", "Norwegian Nynorsk", "Norwegian", "Occitan", "Panjabi", "Polish", "Pushto", "Portuguese",
+          "Romanian", "Russian", "Sanskrit", "Scots", "Sindhi", "Sinhala", "Slovak", "Slovenian", "Shona", "Somali", "Albanian",
+          "Serbian", "Sundanese", "Swedish", "Swahili", "Tamil", "Telugu", "Tajik", "Thai", "Turkmen", "Tagalog", "Turkish",
+          "Tatar", "Ukrainian", "Urdu", "Uzbek", "Vietnamese", "Waray", "Yiddish", "Yoruba", "Mandarin Chinese"
+          ]
       }
     ]
   }

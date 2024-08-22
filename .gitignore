@@ -135,3 +135,4 @@ tmp
 main.py
 /torch-env
 /.github
+/scripts

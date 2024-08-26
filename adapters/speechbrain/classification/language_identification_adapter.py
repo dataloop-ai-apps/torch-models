@@ -82,7 +82,7 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
             # Check confidence for the top 3 languages
             for idx in sorted_indices[:3]:
                 confidence = linear_likelihoods[int(idx)] / total_likelihood
-                if float(confidence) > confidence_thresh:
+                if float(confidence) > self.confidence_thresh:
                     confidences.add(confidence)
                     best_languages.add(self.languages_list[idx])
             best_languages_list = list(best_languages)

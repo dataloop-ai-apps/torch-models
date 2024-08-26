@@ -24,10 +24,9 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
     """
 
     def __init__(self, model_entity: dl.Model):
+        self.confidence_thresh = None
+        self.languages_list = None
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.languages_list = self.model_entity.labels
-        if not self.languages_list:
-            raise Exception("Languages list is empty or not found in JSON file.")
         super().__init__(model_entity)
 
     def load(self, local_path, **kwargs):
@@ -37,6 +36,9 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
+        self.languages_list = self.model_entity.labels
+        if not self.languages_list:
+            raise Exception("Languages list is empty or not found in JSON file.")
         self.model = EncoderClassifier.from_hparams(source="speechbrain/lang-id-voxlingua107-ecapa",
                                                     savedir="pretrained_models/lang-id-voxlingua107-ecapa")
         logger.info(f"Loaded model from library successfully")
@@ -53,7 +55,7 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
         :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
         """
         logger.info('Encoder Classifier prediction started')
-        confidence_thresh = self.configuration.get('conf_thresh', 0.3)
+        self.confidence_thresh = self.configuration.get('conf_thresh', 0.3)
         batch_annotations = list()
         for item in batch:
             filename = item.download(overwrite=True)

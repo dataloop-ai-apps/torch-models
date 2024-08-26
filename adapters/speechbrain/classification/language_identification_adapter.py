@@ -25,7 +25,6 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
 
     def __init__(self, model_entity: dl.Model):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.confidence_thresh = self.configuration.get('conf_thresh', 0.3)
         self.languages_list = self.model_entity.labels
         if not self.languages_list:
             raise Exception("Languages list is empty or not found in JSON file.")
@@ -54,6 +53,7 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
         :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
         """
         logger.info('Encoder Classifier prediction started')
+        confidence_thresh = self.configuration.get('conf_thresh', 0.3)
         batch_annotations = list()
         for item in batch:
             filename = item.download(overwrite=True)
@@ -80,7 +80,7 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
             # Check confidence for the top 3 languages
             for idx in sorted_indices[:3]:
                 confidence = linear_likelihoods[int(idx)] / total_likelihood
-                if float(confidence) > self.confidence_thresh:
+                if float(confidence) > confidence_thresh:
                     confidences.add(confidence)
                     best_languages.add(self.languages_list[idx])
             best_languages_list = list(best_languages)

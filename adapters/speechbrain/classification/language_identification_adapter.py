@@ -11,13 +11,13 @@ import soundfile
 from speechbrain.inference import EncoderClassifier
 import pathlib
 
-logger = logging.getLogger('EncoderClassifier-adapter')
+logger = logging.getLogger('LanguageClassifier-adapter')
 
 
 @dl.Package.decorators.module(name='model-adapter',
                               description='Model Adapter for SpeechBrain Encoder Classifier model',
                               init_inputs={'model_entity': dl.Model})
-class EncoderClassifierAdapter(dl.BaseModelAdapter):
+class LanguageClassifierAdapter(dl.BaseModelAdapter):
     """
     SpeechBrain Encoder Classifier Model adapter using Pytorch.
     The class bind Dataloop model and model entities with model code implementation
@@ -57,11 +57,11 @@ class EncoderClassifierAdapter(dl.BaseModelAdapter):
         batch_annotations = list()
         for item in batch:
             filename = item.download(overwrite=True)
-            logger.info(f'Encoder Classifier predicting {filename}, started.')
+            logger.info(f'Language Encoder Classifier predicting {filename}, started.')
             # Get the format from filename and adding it to torchaudio load
             signal = self.model.load_audio(filename)
             prediction = self.model(signal)
-            logger.info(f'Encoder Classifier predicting {filename}, done.')
+            logger.info(f'Language Encoder Classifier predicting {filename}, done.')
 
             # Convert log-likelihoods to linear-scale likelihoods
             log_likelihoods = prediction[0][0]

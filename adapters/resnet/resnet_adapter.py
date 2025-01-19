@@ -111,12 +111,15 @@ class ModelAdapter(dl.BaseModelAdapter):
         ####################
         # Prepare the data #
         ####################
+        class_balancing = True
+        if len(self.model_entity.labels) == 1: # No need to balance for 1 class, fix for dat-85317
+            class_balancing = False
         train_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'train'),
                                               dataset_entity=self.model_entity.dataset,
                                               annotation_type=dl.AnnotationType.CLASSIFICATION,
                                               transforms=data_transforms['train'],
                                               id_to_label_map=self.model_entity.id_to_label_map,
-                                              class_balancing=True
+                                              class_balancing=class_balancing
                                               )
         val_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'validation'),
                                             dataset_entity=self.model_entity.dataset,

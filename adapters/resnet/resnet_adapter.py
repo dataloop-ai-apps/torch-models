@@ -111,15 +111,18 @@ class ModelAdapter(dl.BaseModelAdapter):
         ####################
         # Prepare the data #
         ####################
-        class_balancing = True
-        if len(self.model_entity.labels) == 1: # No need to balance for 1 class, fix for dat-85317
-            class_balancing = False
+        if len(self.model_entity.labels) == 1:  # dat-85317
+            raise ValueError(
+                "ResNet training requires at least two unique labels in the subset. "
+                "The provided subset contains only one label, which is insufficient for a classification task. "
+                "Please provide a subset with multiple classes to proceed with training."
+            )
         train_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'train'),
                                               dataset_entity=self.model_entity.dataset,
                                               annotation_type=dl.AnnotationType.CLASSIFICATION,
                                               transforms=data_transforms['train'],
                                               id_to_label_map=self.model_entity.id_to_label_map,
-                                              class_balancing=class_balancing
+                                              class_balancing=True
                                               )
         val_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'validation'),
                                             dataset_entity=self.model_entity.dataset,

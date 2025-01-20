@@ -111,7 +111,10 @@ class ModelAdapter(dl.BaseModelAdapter):
         ####################
         # Prepare the data #
         ####################
-        try: # dat-85317
+        class ResNetTrainingError(Exception):
+            pass
+
+        try:  # dat-85317
             train_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'train'),
                                                   dataset_entity=self.model_entity.dataset,
                                                   annotation_type=dl.AnnotationType.CLASSIFICATION,
@@ -121,11 +124,11 @@ class ModelAdapter(dl.BaseModelAdapter):
                                                   )
         except ValueError as e:
             if "The target 'y' needs to have more than 1 class" in str(e):
-                raise ValueError(
+                raise ResNetTrainingError(
                     "ResNet training requires at least two unique labels in the subset. "
                     "The provided subset contains only one label, which is insufficient for training. "
                     "Please provide a subset with multiple classes."
-                ) from e
+                ) from None
             else:
                 # Re-raise other unexpected ValueErrors
                 raise

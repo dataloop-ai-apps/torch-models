@@ -111,13 +111,28 @@ class ModelAdapter(dl.BaseModelAdapter):
         ####################
         # Prepare the data #
         ####################
-        train_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'train'),
-                                              dataset_entity=self.model_entity.dataset,
-                                              annotation_type=dl.AnnotationType.CLASSIFICATION,
-                                              transforms=data_transforms['train'],
-                                              id_to_label_map=self.model_entity.id_to_label_map,
-                                              class_balancing=True
-                                              )
+        class ResNetTrainingError(Exception):
+            pass
+
+        try:  # dat-85317
+            train_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'train'),
+                                                  dataset_entity=self.model_entity.dataset,
+                                                  annotation_type=dl.AnnotationType.CLASSIFICATION,
+                                                  transforms=data_transforms['train'],
+                                                  id_to_label_map=self.model_entity.id_to_label_map,
+                                                  class_balancing=True
+                                                  )
+        except ValueError as e:
+            if "The target 'y' needs to have more than 1 class" in str(e):
+                raise ResNetTrainingError(
+                    "ResNet training requires at least two unique labels in the subset. "
+                    "The provided subset contains only one label, which is insufficient for training. "
+                    "Please provide a subset with multiple classes."
+                ) from None
+            else:
+                # Re-raise other unexpected ValueErrors
+                raise
+
         val_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'validation'),
                                             dataset_entity=self.model_entity.dataset,
                                             annotation_type=dl.AnnotationType.CLASSIFICATION,

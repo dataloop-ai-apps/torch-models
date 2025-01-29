@@ -29,6 +29,12 @@ Dataloop platform.
 After installing the pretrained model, it is necessary to deploy it, so it can be used
 for prediction.
 
+### Editing the configuration
+
+To edit configurations, go to the model page in the Model Management section on the platform and edit the displayed JSON file or use the SDK to edit the model configuration. Basic configuration include:
+
+- `conf_thresh`: confidence threshold for which a language is added to the predicted label.
+
 ## Sources and Further Reading
 
 - [SpeechBrain Documentation](https://speechbrain.readthedocs.io/en/latest/)

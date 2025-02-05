@@ -5,6 +5,7 @@ These are pytorch model adapters.
 1. ResNet50 (adapters/resnet/resnet_adapter.py)
 2. DeepLabV3 (adapters/deeplabv3/model_adapter.py), for more information visit
    here [documentation](adapters/deeplabv3/README.md).
+3. Faster R-CNN (adapters/fasterrcnn/fasterrcnn_adapter.py), for more information check the [documentation](https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html).
 
 Full Model Management documentation [here](https://dataloop.ai/docs).
 Developers Documentation is [here](https://developers.dataloop.ai/tutorials/model_management/).

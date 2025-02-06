@@ -223,8 +223,7 @@
         "configuration": {
           "weights_filename": "model.pth",
           "batch_size": 16,
-          "num_epochs": 10,
-          "embeddings_size": 2048
+          "num_epochs": 10
         },
         "artifacts": [
           {

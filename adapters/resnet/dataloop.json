@@ -224,7 +224,7 @@
           "weights_filename": "model.pth",
           "batch_size": 16,
           "num_epochs": 10,
-          "embeddings_size": 2084
+          "embeddings_size": 2048
         },
         "artifacts": [
           {

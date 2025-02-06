@@ -375,7 +375,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         """ Model feature vectors (embedding) on batch of images
 
         :param batch: `np.ndarray`
-        :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
+        :return: `list[np.ndarray]` per each image / item in the batch
         """
         # prepare image
         batch_tensor = self.preprocess(batch)

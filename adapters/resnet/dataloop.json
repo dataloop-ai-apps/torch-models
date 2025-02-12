@@ -197,12 +197,12 @@
               {
                 "type": "Dataset",
                 "name": "dataset",
-                "description": "The input dataset of the items required for prediction."
+                "description": "The input dataset of the items required for embedding."
               },
               {
                 "type": "Json",
                 "name": "filters",
-                "description": "The DQL in json format to get all the items required for prediction."
+                "description": "The DQL in json format to get all the items required for embedding."
               }
             ],
             "output": [],

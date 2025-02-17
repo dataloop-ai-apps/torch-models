@@ -353,6 +353,47 @@ class ModelAdapter(dl.BaseModelAdapter):
         :param batch: `np.ndarray`
         :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
         """
+        batch_tensor = self.preprocess(batch)
+
+        batch_output = self.model(batch_tensor)
+        batch_predictions = torch.nn.functional.softmax(batch_output, dim=1)
+        batch_annotations = list()
+        for img_prediction in batch_predictions:
+            pred_score, high_pred_index = torch.max(img_prediction, 0)
+            pred_label = self.model_entity.id_to_label_map.get(int(high_pred_index.item()), 'UNKNOWN')
+            collection = dl.AnnotationCollection()
+            collection.add(annotation_definition=dl.Classification(label=pred_label),
+                           model_info={'name': self.model_entity.name,
+                                       'confidence': pred_score.item(),
+                                       'model_id': self.model_entity.id,
+                                       'dataset_id': self.model_entity.dataset_id})
+            logger.debug("Predicted {:20} ({:1.3f})".format(pred_label, pred_score))
+            batch_annotations.append(collection)
+        return batch_annotations
+
+    def embed(self, batch, **kwargs):
+        """ Model feature vectors (embedding) on batch of images
+
+        :param batch: `np.ndarray`
+        :return: `list[np.ndarray]` per each image / item in the batch
+        """
+        # prepare image
+        batch_tensor = self.preprocess(batch)
+
+        # prepare model
+        self.model.eval()  # Set model to evaluation mode
+        # Remove the last fully connected layer to get feature vectors
+        feature_extractor = torch.nn.Sequential(*list(self.model.children())[:-1])
+        feature_extractor.to(self.device)
+
+        with torch.no_grad():
+            images = batch_tensor.to(self.device) # [batch, 3, 256, 256]
+            features = feature_extractor(images)  # Output: (batch, 2048, 1, 1)
+            features = torch.flatten(features, start_dim=1)  # Flatten to (batch, 2048)
+            embeddings = features.cpu().detach().numpy().tolist()
+        return embeddings
+
+    def preprocess(self, batch, **kwargs):
         input_size = self.configuration.get('input_size', 256)
 
         def gray_to_rgb(x):
@@ -369,21 +410,9 @@ class ModelAdapter(dl.BaseModelAdapter):
         )
         img_tensors = [preprocess(img.astype('uint8')) for img in batch]
         batch_tensor = torch.stack(img_tensors).to(self.device)
-        batch_output = self.model(batch_tensor)
-        batch_predictions = torch.nn.functional.softmax(batch_output, dim=1)
-        batch_annotations = list()
-        for img_prediction in batch_predictions:
-            pred_score, high_pred_index = torch.max(img_prediction, 0)
-            pred_label = self.model_entity.id_to_label_map.get(int(high_pred_index.item()), 'UNKNOWN')
-            collection = dl.AnnotationCollection()
-            collection.add(annotation_definition=dl.Classification(label=pred_label),
-                           model_info={'name': self.model_entity.name,
-                                       'confidence': pred_score.item(),
-                                       'model_id': self.model_entity.id,
-                                       'dataset_id': self.model_entity.dataset_id})
-            logger.debug("Predicted {:20} ({:1.3f})".format(pred_label, pred_score))
-            batch_annotations.append(collection)
-        return batch_annotations
+        return batch_tensor
+
+
 
     def convert_from_dtlpy(self, data_path, **kwargs):
         """ Convert Dataloop structure data to model structured

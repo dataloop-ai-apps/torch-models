@@ -19,36 +19,19 @@ from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGe
 logger = logging.getLogger('resnet-adapter')
 
 
-@dl.Package.decorators.module(name='model-adapter',
-                              description='Model Adapter for ResNet classification',
-                              init_inputs={'model_entity': dl.Model})
 class ModelAdapter(dl.BaseModelAdapter):
     """
-    resnet Model adapter using pytorch.
-    The class bind Dataloop model and model entities with model code implementation
+    ResNet Model adapter using pytorch.
+    The class binds Dataloop model and model entities with model code implementation
     """
 
-    def __init__(self, model_entity=None):
-        if not isinstance(model_entity, dl.Model):
-            # pending fix DAT-31398
-            if isinstance(model_entity, str):
-                model_entity = dl.models.get(model_id=model_entity)
-            if isinstance(model_entity, dict) and 'model_id' in model_entity:
-                model_entity = dl.models.get(model_id=model_entity['model_id'])
-
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        super(ModelAdapter, self).__init__(model_entity=model_entity)
-
     def load(self, local_path, **kwargs):
-        """ Loads model and populates self.model with a `runnable` model
-
-            Virtual method - need to implement
-
-            This function is called by load_from_model (download to local and then loads)
-
+        """
+        Loads model and populates self.model with a `runnable` model
 
         :param local_path: `str` directory path in local FileSystem
         """
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         weights_filename = self.model_entity.configuration.get('weights_filename', 'model.pth')
         # load model arch and state
         model_path = os.path.join(local_path, weights_filename)
@@ -56,15 +39,15 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.model = torch.load(model_path, map_location=self.device, weights_only=False)
         self.model.to(self.device)
         self.model.eval()
+        self.configuration['embeddings_size'] = self.configuration.get('embeddings_size', 2048)
         # How to load the label_map from loaded model
         logger.info("Loaded model from {} successfully".format(model_path))
 
     def save(self, local_path, **kwargs):
-        """ saves configuration and weights locally
+        """
+        saves configuration and weights locally
 
-            Virtual method - need to implement
-
-            the function is called in save_to_model which first save locally and then uploads to model entity
+        the function is called in save_to_model which first save locally and then uploads to model entity
 
         :param local_path: `str` directory path in local FileSystem
         """
@@ -387,7 +370,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         feature_extractor.to(self.device)
 
         with torch.no_grad():
-            images = batch_tensor.to(self.device) # [batch, 3, 256, 256]
+            images = batch_tensor.to(self.device)  # [batch, 3, 256, 256]
             features = feature_extractor(images)  # Output: (batch, 2048, 1, 1)
             features = torch.flatten(features, start_dim=1)  # Flatten to (batch, 2048)
             embeddings = features.cpu().detach().numpy().tolist()
@@ -411,8 +394,6 @@ class ModelAdapter(dl.BaseModelAdapter):
         img_tensors = [preprocess(img.astype('uint8')) for img in batch]
         batch_tensor = torch.stack(img_tensors).to(self.device)
         return batch_tensor
-
-
 
     def convert_from_dtlpy(self, data_path, **kwargs):
         """ Convert Dataloop structure data to model structured

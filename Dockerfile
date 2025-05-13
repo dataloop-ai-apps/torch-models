@@ -12,5 +12,6 @@ COPY /requirements.txt .
 
 RUN pip install -r requirements.txt
 
-# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.4 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.4
+# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.5 -f ./Dockerfile  .
+# docker run -it gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.5 bash
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.5

@@ -19,9 +19,6 @@ from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGe
 logger = logging.getLogger('TIMM-adapter')
 
 
-@dl.Package.decorators.module(name='model-adapter',
-                              description='Model Adapter for TIMM Models',
-                              init_inputs={'model_entity': dl.Model})
 class TIMMAdapter(dl.BaseModelAdapter):
     """
     TIMM Model adapter using Pytorch.
@@ -44,16 +41,15 @@ class TIMMAdapter(dl.BaseModelAdapter):
         """
         weights_filename = self.model_entity.configuration.get('weights_filename')
         model_path = str(os.path.join(local_path, weights_filename))
+        
         if weights_filename and os.path.exists(model_path):
-            # With the model entity and weights from the platform
-
-            logger.info(f"Loading a model from {model_path}")
-            self.model = torch.load(model_path, map_location=self.device)
-            logger.info(f"Loaded model from {model_path} successfully")
+            logger.info(f"Loading trained weights")
+            self.model = timm.create_model(self.configuration.get('model_name'), pretrained=False)
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         else:
-            # With the model from the library
+            logger.info("No trained weights file found, loading pretrained model from library")
             self.model = timm.create_model(self.configuration.get('model_name'), pretrained=True)
-            logger.info(f"Loaded model from library successfully")
+        
         self.model.to(self.device)
         self.model.eval()
 
@@ -63,15 +59,8 @@ class TIMMAdapter(dl.BaseModelAdapter):
         self.timm_val_transforms = timm.data.create_transform(**data_config, is_training=False)
 
     def save(self, local_path, **kwargs):
-        """ Saves configuration and weights locally
-
-            The function is called in save_to_model which first save locally and then uploads to model entity
-
-        :param local_path: `str` directory path in local FileSystem
-        """
-        weights_filename = kwargs.get('weights_filename', 'model.pth')
-        torch.save(self.model, os.path.join(local_path, weights_filename))
-        self.configuration['weights_filename'] = weights_filename
+        torch.save(self.model.state_dict(), os.path.join(local_path, 'best.pth'))
+        self.configuration['weights_filename'] = 'best.pth'
 
     def predict(self, batch, **kwargs):
         """ Model inference (predictions) on batch of images
@@ -250,7 +239,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
                         best_model_wts = copy.deepcopy(self.model.state_dict())
                         logger.info(
                             f'Validation loss decreased ({best_loss:.6f} --> {epoch_loss:.6f}).  Saving model ...')
-                        torch.save(self.model, os.path.join(output_path, 'best.pth'))
+                        torch.save(self.model.state_dict(), os.path.join(output_path, 'best.pth'))
                         # self.model_entity.bucket.sync(local_path=output_path)
 
                     else:
@@ -337,7 +326,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
             report.add(fig=confusion, icol=0, irow=2)
             # Upload the report to a dataset
             report.upload(dataset=self.model_entity.dataset,
-                          remote_path="/reports",
+                          remote_path="/.dataloop/reports",
                           remote_name=f"confusion_model_{self.model_entity.id}.json")
         except Exception:
             logger.warning('Failed creating shebang confusion report! Continue without...')

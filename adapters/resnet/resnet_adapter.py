@@ -328,7 +328,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             report.add(fig=confusion, icol=0, irow=2)
             # Upload the report to a dataset
             report.upload(dataset=self.model_entity.dataset,
-                          remote_path="/reports",
+                          remote_path="/.dataloop/reports",
                           remote_name=f"confusion_model_{self.model_entity.id}.json")
         except Exception:
             logger.warning('Failed creating shebang confusion report! Continue without...')

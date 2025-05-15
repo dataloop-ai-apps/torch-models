@@ -51,9 +51,8 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
-        weights_filename = kwargs.get('weights_filename', 'model.pth')
-        torch.save(self.model, os.path.join(local_path, weights_filename))
-        self.configuration['weights_filename'] = weights_filename
+        torch.save(self.model, os.path.join(local_path, 'best.pth'))
+        self.configuration['weights_filename'] = 'best.pth'
 
     def train(self, data_path, output_path, **kwargs):
         """ Train the model according to data in local_path and save the model to dump_path

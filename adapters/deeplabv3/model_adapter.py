@@ -21,9 +21,6 @@ import os
 logger = logging.getLogger('segmentation-models-adapter')
 
 
-@dl.Package.decorators.module(name='model-adapter',
-                              description='Base Model Adapter for Segmentation Models',
-                              init_inputs={'model_entity': dl.Model})
 class ModelAdapter(dl.BaseModelAdapter):
 
     def load(self, local_path, **kwargs):
@@ -42,7 +39,7 @@ class ModelAdapter(dl.BaseModelAdapter):
                 logger.info("Loading a model from {}".format(weights_filename))
                 num_classes = len(self.model_entity.id_to_label_map.items())
                 self.model.classifier[-1] = torch.nn.Conv2d(256, num_classes, kernel_size=(1, 1), stride=(1, 1))
-                self.model.load_state_dict(torch.load(weights_filename, map_location=self.device))
+                self.model.load_state_dict(torch.load(weights_filename, map_location=self.device, weights_only=False))
                 logger.info("Loaded custom weights {}".format(weights_filename))
             else:
                 raise Exception(
@@ -72,9 +69,8 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
-        weights_filename = kwargs.get('weights_filename', 'model.pth')
-        torch.save(self.model.state_dict(), os.path.join(local_path, weights_filename))
-        self.configuration['weights_filename'] = weights_filename
+        torch.save(self.model.state_dict(), os.path.join(local_path, 'best.pth'))
+        self.configuration['weights_filename'] = 'best.pth'
 
     def train(self, data_path, output_path, **kwargs):
         """ Train the model according to data in local_path and save the model to dump_path

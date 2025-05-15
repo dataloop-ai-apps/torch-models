@@ -39,7 +39,7 @@ class ModelAdapter(dl.BaseModelAdapter):
                 logger.info("Loading a model from {}".format(weights_filename))
                 num_classes = len(self.model_entity.id_to_label_map.items())
                 self.model.classifier[-1] = torch.nn.Conv2d(256, num_classes, kernel_size=(1, 1), stride=(1, 1))
-                self.model.load_state_dict(torch.load(weights_filename, map_location=self.device, weights_only=False))
+                self.model.load_state_dict(torch.load(weights_filename, map_location=self.device))
                 logger.info("Loaded custom weights {}".format(weights_filename))
             else:
                 raise Exception(

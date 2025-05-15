@@ -51,7 +51,13 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
+        logger.info(f"Saving model to {local_path}")
         torch.save(self.model, os.path.join(local_path, 'best.pth'))
+        try:
+            files = os.listdir(local_path)
+            logger.info(f"Files in the directory: {files}")
+        except Exception as e:
+            logger.error(f"Error listing directory contents: {str(e)}")
         self.configuration['weights_filename'] = 'best.pth'
 
     def train(self, data_path, output_path, **kwargs):

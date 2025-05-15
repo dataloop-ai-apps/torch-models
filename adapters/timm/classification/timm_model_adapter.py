@@ -42,10 +42,9 @@ class TIMMAdapter(dl.BaseModelAdapter):
         weights_filename = self.model_entity.configuration.get('weights_filename')
         model_path = str(os.path.join(local_path, weights_filename))
         
-        self.model = timm.create_model(self.configuration.get('model_name'), pretrained=False)
-        
         if weights_filename and os.path.exists(model_path):
             logger.info(f"Loading trained weights")
+            self.model = timm.create_model(self.configuration.get('model_name'), pretrained=False)
             self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         else:
             logger.info("No trained weights file found, loading pretrained model from library")

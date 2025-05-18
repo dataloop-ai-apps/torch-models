@@ -37,9 +37,6 @@
       },
       {
         "name": "hrnet-train-evaluate",
-        "versions": {
-          "dtlpy": "1.90.39"
-        },
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
@@ -50,7 +47,7 @@
             "maxReplicas": 2,
             "queueLength": 100
           },
-          "executionTimeout": 36000000
+          "executionTimeout": 36000
         }
       }
     ],

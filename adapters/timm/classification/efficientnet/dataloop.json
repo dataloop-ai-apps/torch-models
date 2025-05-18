@@ -37,9 +37,6 @@
       },
       {
         "name": "efficientnet-train-evaluate",
-        "versions": {
-          "dtlpy": "1.90.39"
-        },
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,

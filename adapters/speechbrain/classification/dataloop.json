@@ -37,9 +37,7 @@
       },
       {
         "name": "language-classifier-train-evaluate",
-        "versions": {
-          "dtlpy": "1.90.39"
-        },
+        "executionTimeout": 36000000,
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
@@ -49,8 +47,7 @@
             "minReplicas": 0,
             "maxReplicas": 2,
             "queueLength": 100
-          },
-          "executionTimeout": 36000000
+          }
         }
       }
     ],

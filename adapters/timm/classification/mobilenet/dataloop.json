@@ -37,7 +37,7 @@
       },
       {
         "name": "mobilenet-train-evaluate",
-        "executionTimeout": 36000000,
+        "executionTimeout": 432000,
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,

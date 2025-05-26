@@ -1,7 +1,7 @@
 {
   "name": "deeplabv3",
   "displayName": "DeepLabv3",
-  "version": "0.1.42",
+  "version": "0.1.43",
   "scope": "public",
   "description": "DeepLabv3 is a deep learning model designed for semantic image segmentation, offering precise pixel-level classification and accurate object boundary.",
   "attributes": {
@@ -17,7 +17,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.42"
+    "gitTag": "0.1.43"
   },
   "components": {
     "computeConfigs": [

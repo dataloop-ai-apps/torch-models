@@ -18,7 +18,6 @@ from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGe
 from dtlpyconverters.yolo import DataloopToYolo
 from PIL import Image
 import json
-from torchvision.utils import save_image
 
 logger = logging.getLogger('TIMM-adapter')
 
@@ -140,12 +139,14 @@ class TIMMAdapter(dl.BaseModelAdapter):
         
         
         train_dataset = DtlpyJsonClassificationDataset(
+            model_entity=self.model_entity,
             images_dir=train_images_dir,
             annotations_dir=train_annotations_dir,
             transform=data_transforms['train'],
             labels_to_id_map=self.model_entity.label_to_id_map
         )
         val_dataset = DtlpyJsonClassificationDataset(
+            model_entity=self.model_entity,
             images_dir=val_images_dir,
             annotations_dir=val_annotations_dir,
             transform=data_transforms['val'],
@@ -187,29 +188,6 @@ class TIMMAdapter(dl.BaseModelAdapter):
             if end_training:
                 break
             logger.info('Epoch {}/{} Start...'.format(epoch, num_epochs))
-
-            # --- DEBUG DUMP: Save a small batch of images and labels at the start of the epoch ---
-            debug_batch = next(iter(dataloaders['train']))
-            debug_images = debug_batch['image'][:8]  # up to 8 images
-            debug_labels = debug_batch['annotations'][:8].cpu().numpy().tolist()
-            debug_dir = os.path.join(output_path, f'debug_epoch_{epoch}')
-            os.makedirs(debug_dir, exist_ok=True)
-            for i, img in enumerate(debug_images):
-                img_path = os.path.join(debug_dir, f'sample_{i}_label_{debug_labels[i][0]}.png')
-                # If img is not a tensor, convert to tensor
-                if not torch.is_tensor(img):
-                    img = transforms.ToTensor()(img)
-                save_image(img, img_path)
-            with open(os.path.join(debug_dir, 'labels.json'), 'w') as f:
-                json.dump({'labels': debug_labels}, f)
-
-            # --- DEBUG DUMP: Class distribution in the batch ---
-            class_dist = {}
-            for label in debug_labels:
-                class_dist[str(label[0])] = class_dist.get(str(label[0]), 0) + 1
-            with open(os.path.join(debug_dir, 'class_distribution.json'), 'w') as f:
-                json.dump(class_dist, f)
-
             epoch_time = time.time()
             # Each epoch has a training and validation phase
             for phase in ['train', 'val']:
@@ -221,8 +199,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
                 running_loss = 0.0
                 running_corrects = 0
                 total = 0
-                all_preds = []
-                all_labels = []
+
                 # Iterate over data.
                 with tqdm(dataloaders[phase], unit="batch") as tepoch:
                     for batch in tepoch:
@@ -251,9 +228,6 @@ class TIMMAdapter(dl.BaseModelAdapter):
                         epoch_acc = running_corrects / total
                         epoch_loss = running_loss / total
                         tepoch.set_postfix(loss=epoch_loss, accuracy=100. * epoch_acc)
-                        # --- DEBUG: Collect predictions and labels ---
-                        all_preds.extend(preds.cpu().numpy().tolist())
-                        all_labels.extend(labels.cpu().numpy().tolist())
 
                 if phase == 'train':
                     exp_lr_scheduler.step()
@@ -290,22 +264,6 @@ class TIMMAdapter(dl.BaseModelAdapter):
                     if not_improving_epochs > patience_epochs:
                         end_training = True
                         logger.info(f'EarlyStopping counter: {not_improving_epochs} out of {patience_epochs}')
-
-                # --- DEBUG DUMP: Save predictions and true labels after each epoch ---
-                pred_dump = {
-                    'phase': phase,
-                    'epoch': epoch,
-                    'predictions': all_preds,
-                    'labels': all_labels
-                }
-                with open(os.path.join(output_path, f'predictions_{phase}_epoch_{epoch}.json'), 'w') as f:
-                    json.dump(pred_dump, f)
-                # --- DEBUG DUMP: Class distribution for the phase ---
-                class_dist_epoch = {}
-                for label in all_labels:
-                    class_dist_epoch[str(label)] = class_dist_epoch.get(str(label), 0) + 1
-                with open(os.path.join(output_path, f'class_distribution_{phase}_epoch_{epoch}.json'), 'w') as f:
-                    json.dump(class_dist_epoch, f)
 
             #############
             # Callbacks #
@@ -406,7 +364,8 @@ class TIMMAdapter(dl.BaseModelAdapter):
 
 
 class DtlpyJsonClassificationDataset(torch.utils.data.Dataset):
-    def __init__(self, images_dir, annotations_dir, transform=None, labels_to_id_map=None):
+    def __init__(self, model_entity, images_dir, annotations_dir, transform=None, labels_to_id_map=None):
+        self.model_entity = model_entity
         self.images_dir = images_dir
         self.annotations_dir = annotations_dir
         self.transform = transform
@@ -440,8 +399,14 @@ class DtlpyJsonClassificationDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         img_path, label = self.samples[idx]
-        image = Image.open(img_path).convert('RGB')
+        original_image = Image.open(img_path).convert('RGB')
         if self.transform:
-            image = self.transform(image)
+            image = self.transform(original_image)
         class_idx = self.labels_to_id_map[label]
+        ## dump file
+        debug = False
+        if debug is True:
+            dump_path = os.path.join('tmp', self.model_entity.id, '.debug', f'{label}')
+            os.makedirs(dump_path, exist_ok=True)
+            original_image.save(os.path.join(dump_path, f'{idx}.png'))
         return {'image': image, 'annotations': torch.tensor([class_idx], dtype=torch.long)}

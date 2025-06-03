@@ -11,8 +11,7 @@ RUN pip3 install torch torchvision torchaudio --index-url https://download.pytor
 COPY /requirements.txt .
 
 RUN pip install -r requirements.txt
-RUN pip install git+https://github.com/dataloop-ai-apps/dtlpy-converters.git
 
-# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7 -f ./Dockerfile  .
-# docker run -it gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7 bash
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7
+# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.6 -f ./Dockerfile  .
+# docker run -it gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.6 bash
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.6

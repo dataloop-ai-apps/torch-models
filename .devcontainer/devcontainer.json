@@ -3,7 +3,7 @@
 {
 	"name": "Python 3",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7",
+	"image": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.6",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

@@ -15,7 +15,6 @@ import logging
 import copy
 from dtlpy.utilities.dataset_generators.dataset_generator import collate_torch
 from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGeneratorTorch
-from dtlpyconverters.yolo import DataloopToYolo
 from PIL import Image
 import json
 

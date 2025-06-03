@@ -15,6 +15,9 @@ import logging
 import copy
 from dtlpy.utilities.dataset_generators.dataset_generator import collate_torch
 from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGeneratorTorch
+from dtlpyconverters.yolo import DataloopToYolo
+from PIL import Image
+import json
 
 logger = logging.getLogger('TIMM-adapter')
 
@@ -103,15 +106,23 @@ class TIMMAdapter(dl.BaseModelAdapter):
         batch_size = self.configuration.get('batch_size', 64)
         on_epoch_end_callback = kwargs.get('on_epoch_end_callback')
 
+        class ImgAugTransform:
+            def __init__(self, augmenter):
+                self.augmenter = augmenter
+            def __call__(self, img):
+                img = np.array(img)
+                img = self.augmenter.augment_image(img)
+                return Image.fromarray(img)
+
         data_transforms = {
             'train': transforms.Compose([
-                iaa.flip.Fliplr(p=0.5),
-                iaa.flip.Flipud(p=0.2),
-                transforms.ToPILImage(),
+                ImgAugTransform(iaa.Sequential([
+                    iaa.Fliplr(0.5),
+                    iaa.Flipud(0.2)
+                ])),
                 *self.timm_train_transforms.transforms
             ]),
             'val': transforms.Compose([
-                transforms.ToPILImage(),
                 *self.timm_val_transforms.transforms
             ])
         }
@@ -119,33 +130,40 @@ class TIMMAdapter(dl.BaseModelAdapter):
         ####################
         # Prepare the data #
         ####################
-        train_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'train'),
-                                              dataset_entity=self.model_entity.dataset,
-                                              annotation_type=dl.AnnotationType.CLASSIFICATION,
-                                              transforms=data_transforms['train'],
-                                              id_to_label_map=self.model_entity.id_to_label_map,
-                                              # class_balancing=True
-                                              )
-        val_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'validation'),
-                                            dataset_entity=self.model_entity.dataset,
-                                            annotation_type=dl.AnnotationType.CLASSIFICATION,
-                                            transforms=data_transforms['val'],
-                                            id_to_label_map=self.model_entity.id_to_label_map,
-                                            )
+       
+        train_annotations_dir = os.path.join(data_path, 'train', 'json')
+        train_images_dir = os.path.join(data_path, 'train', 'items')
+        
+        val_annotations_dir = os.path.join(data_path, 'validation', 'json')
+        val_images_dir = os.path.join(data_path, 'validation', 'items')
+        
+        
+        train_dataset = DtlpyJsonClassificationDataset(
+            model_entity=self.model_entity,
+            images_dir=train_images_dir,
+            annotations_dir=train_annotations_dir,
+            transform=data_transforms['train'],
+            labels_to_id_map=self.model_entity.label_to_id_map
+        )
+        val_dataset = DtlpyJsonClassificationDataset(
+            model_entity=self.model_entity,
+            images_dir=val_images_dir,
+            annotations_dir=val_annotations_dir,
+            transform=data_transforms['val'],
+            labels_to_id_map=self.model_entity.label_to_id_map
+        )
         dataloaders = {'train': DataLoader(train_dataset,
                                            batch_size=batch_size,
-                                           shuffle=True,
-                                           collate_fn=collate_torch),
+                                           shuffle=True),
                        'val': DataLoader(val_dataset,
                                          batch_size=batch_size,
-                                         collate_fn=collate_torch,
                                          shuffle=True
                                          )}
         #################
         # prepare model #
         #################
 
-        n_classes = len(train_dataset.id_to_label_map)
+        n_classes = len(self.model_entity.label_to_id_map)
         logger.info('Setting last layer for {} classes'.format(n_classes))
 
         criterion = torch.nn.CrossEntropyLoss()
@@ -170,7 +188,6 @@ class TIMMAdapter(dl.BaseModelAdapter):
             if end_training:
                 break
             logger.info('Epoch {}/{} Start...'.format(epoch, num_epochs))
-
             epoch_time = time.time()
             # Each epoch has a training and validation phase
             for phase in ['train', 'val']:
@@ -344,3 +361,52 @@ class TIMMAdapter(dl.BaseModelAdapter):
                 'Add a validation set DQL filter in the dl.Model metadata'
             )
         return
+
+
+class DtlpyJsonClassificationDataset(torch.utils.data.Dataset):
+    def __init__(self, model_entity, images_dir, annotations_dir, transform=None, labels_to_id_map=None):
+        self.model_entity = model_entity
+        self.images_dir = images_dir
+        self.annotations_dir = annotations_dir
+        self.transform = transform
+        self.labels_to_id_map = labels_to_id_map or {}
+        self.samples = []
+        for root, _, files in os.walk(annotations_dir):
+            for f in files:
+                if f.lower().endswith('.json'):
+                    json_path = os.path.join(root, f)
+                    with open(json_path, 'r') as jf:
+                        data = json.load(jf)
+                    # Find the first annotation of type 'class' and with a 'label' field
+                    ann = None
+                    for a in data.get('annotations', []):
+                        if a.get('type') == 'class' and 'label' in a:
+                            ann = a
+                            break
+                    if ann is not None:
+                        label = ann['label']
+                        # Try to get the image path from 'filename' or 'name'
+                        img_rel_path = data.get('filename') or data.get('name')
+                        if img_rel_path:
+                            # Remove leading slash if present
+                            img_rel_path = img_rel_path.lstrip('/')
+                            img_path = os.path.join(images_dir, img_rel_path)
+                            if os.path.exists(img_path):
+                                self.samples.append((img_path, label))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        img_path, label = self.samples[idx]
+        original_image = Image.open(img_path).convert('RGB')
+        if self.transform:
+            image = self.transform(original_image)
+        class_idx = self.labels_to_id_map[label]
+        ## dump file
+        debug = False
+        if debug is True:
+            dump_path = os.path.join('tmp', self.model_entity.id, '.debug', f'{label}')
+            os.makedirs(dump_path, exist_ok=True)
+            original_image.save(os.path.join(dump_path, f'{idx}.png'))
+        return {'image': image, 'annotations': torch.tensor([class_idx], dtype=torch.long)}

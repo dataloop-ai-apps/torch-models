@@ -1,4 +1,4 @@
-torch>=1.8
+torch>=2.6.0
 torchvision>0.9
 imbalanced-learn
 imblearn

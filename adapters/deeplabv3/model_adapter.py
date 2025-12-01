@@ -21,9 +21,6 @@ import os
 logger = logging.getLogger('segmentation-models-adapter')
 
 
-@dl.Package.decorators.module(name='model-adapter',
-                              description='Base Model Adapter for Segmentation Models',
-                              init_inputs={'model_entity': dl.Model})
 class ModelAdapter(dl.BaseModelAdapter):
 
     def load(self, local_path, **kwargs):
@@ -72,9 +69,8 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
-        weights_filename = kwargs.get('weights_filename', 'model.pth')
-        torch.save(self.model.state_dict(), os.path.join(local_path, weights_filename))
-        self.configuration['weights_filename'] = weights_filename
+        torch.save(self.model.state_dict(), os.path.join(local_path, 'best.pth'))
+        self.configuration['weights_filename'] = 'best.pth'
 
     def train(self, data_path, output_path, **kwargs):
         """ Train the model according to data in local_path and save the model to dump_path
@@ -422,7 +418,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             report.add(fig=confusion, icol=0, irow=2)
 
             # Upload the report to a dataset
-            report.upload(dataset=self.model_entity.dataset, remote_path="/reports",
+            report.upload(dataset=self.model_entity.dataset, remote_path="/.dataloop/reports",
                           remote_name=f"confusion_model_{self.model_entity.id}.json")
 
         except Exception:

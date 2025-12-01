@@ -51,9 +51,14 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         :param local_path: `str` directory path in local FileSystem
         """
-        weights_filename = kwargs.get('weights_filename', 'model.pth')
-        torch.save(self.model, os.path.join(local_path, weights_filename))
-        self.configuration['weights_filename'] = weights_filename
+        logger.info(f"Saving model to {local_path}")
+        torch.save(self.model, os.path.join(local_path, 'best.pth'))
+        try:
+            files = os.listdir(local_path)
+            logger.info(f"Files in the directory: {files}")
+        except Exception as e:
+            logger.error(f"Error listing directory contents: {str(e)}")
+        self.configuration['weights_filename'] = 'best.pth'
 
     def train(self, data_path, output_path, **kwargs):
         """ Train the model according to data in local_path and save the model to dump_path
@@ -323,7 +328,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             report.add(fig=confusion, icol=0, irow=2)
             # Upload the report to a dataset
             report.upload(dataset=self.model_entity.dataset,
-                          remote_path="/reports",
+                          remote_path="/.dataloop/reports",
                           remote_name=f"confusion_model_{self.model_entity.id}.json")
         except Exception:
             logger.warning('Failed creating shebang confusion report! Continue without...')

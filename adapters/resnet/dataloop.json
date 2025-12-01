@@ -1,7 +1,7 @@
 {
   "name": "resnet",
   "displayName": "ResNet",
-  "version": "0.1.38",
+  "version": "0.1.49",
   "scope": "public",
   "description": "ResNet Model Application",
   "attributes": {
@@ -17,7 +17,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.38"
+    "gitTag": "0.1.49"
   },
   "components": {
     "computeConfigs": [
@@ -26,7 +26,7 @@
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.4",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -40,7 +40,7 @@
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.4",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,

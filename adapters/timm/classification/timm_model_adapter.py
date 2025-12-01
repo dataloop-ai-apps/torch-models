@@ -15,13 +15,12 @@ import logging
 import copy
 from dtlpy.utilities.dataset_generators.dataset_generator import collate_torch
 from dtlpy.utilities.dataset_generators.dataset_generator_torch import DatasetGeneratorTorch
+from PIL import Image
+import json
 
 logger = logging.getLogger('TIMM-adapter')
 
 
-@dl.Package.decorators.module(name='model-adapter',
-                              description='Model Adapter for TIMM Models',
-                              init_inputs={'model_entity': dl.Model})
 class TIMMAdapter(dl.BaseModelAdapter):
     """
     TIMM Model adapter using Pytorch.
@@ -44,16 +43,15 @@ class TIMMAdapter(dl.BaseModelAdapter):
         """
         weights_filename = self.model_entity.configuration.get('weights_filename')
         model_path = str(os.path.join(local_path, weights_filename))
+        
         if weights_filename and os.path.exists(model_path):
-            # With the model entity and weights from the platform
-
-            logger.info(f"Loading a model from {model_path}")
-            self.model = torch.load(model_path, map_location=self.device)
-            logger.info(f"Loaded model from {model_path} successfully")
+            logger.info(f"Loading trained weights")
+            self.model = timm.create_model(self.configuration.get('model_name'), pretrained=False)
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         else:
-            # With the model from the library
+            logger.info("No trained weights file found, loading pretrained model from library")
             self.model = timm.create_model(self.configuration.get('model_name'), pretrained=True)
-            logger.info(f"Loaded model from library successfully")
+        
         self.model.to(self.device)
         self.model.eval()
 
@@ -63,15 +61,8 @@ class TIMMAdapter(dl.BaseModelAdapter):
         self.timm_val_transforms = timm.data.create_transform(**data_config, is_training=False)
 
     def save(self, local_path, **kwargs):
-        """ Saves configuration and weights locally
-
-            The function is called in save_to_model which first save locally and then uploads to model entity
-
-        :param local_path: `str` directory path in local FileSystem
-        """
-        weights_filename = kwargs.get('weights_filename', 'model.pth')
-        torch.save(self.model, os.path.join(local_path, weights_filename))
-        self.configuration['weights_filename'] = weights_filename
+        torch.save(self.model.state_dict(), os.path.join(local_path, 'best.pth'))
+        self.configuration['weights_filename'] = 'best.pth'
 
     def predict(self, batch, **kwargs):
         """ Model inference (predictions) on batch of images
@@ -114,15 +105,23 @@ class TIMMAdapter(dl.BaseModelAdapter):
         batch_size = self.configuration.get('batch_size', 64)
         on_epoch_end_callback = kwargs.get('on_epoch_end_callback')
 
+        class ImgAugTransform:
+            def __init__(self, augmenter):
+                self.augmenter = augmenter
+            def __call__(self, img):
+                img = np.array(img)
+                img = self.augmenter.augment_image(img)
+                return Image.fromarray(img)
+
         data_transforms = {
             'train': transforms.Compose([
-                iaa.flip.Fliplr(p=0.5),
-                iaa.flip.Flipud(p=0.2),
-                transforms.ToPILImage(),
+                ImgAugTransform(iaa.Sequential([
+                    iaa.Fliplr(0.5),
+                    iaa.Flipud(0.2)
+                ])),
                 *self.timm_train_transforms.transforms
             ]),
             'val': transforms.Compose([
-                transforms.ToPILImage(),
                 *self.timm_val_transforms.transforms
             ])
         }
@@ -130,33 +129,40 @@ class TIMMAdapter(dl.BaseModelAdapter):
         ####################
         # Prepare the data #
         ####################
-        train_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'train'),
-                                              dataset_entity=self.model_entity.dataset,
-                                              annotation_type=dl.AnnotationType.CLASSIFICATION,
-                                              transforms=data_transforms['train'],
-                                              id_to_label_map=self.model_entity.id_to_label_map,
-                                              # class_balancing=True
-                                              )
-        val_dataset = DatasetGeneratorTorch(data_path=os.path.join(data_path, 'validation'),
-                                            dataset_entity=self.model_entity.dataset,
-                                            annotation_type=dl.AnnotationType.CLASSIFICATION,
-                                            transforms=data_transforms['val'],
-                                            id_to_label_map=self.model_entity.id_to_label_map,
-                                            )
+       
+        train_annotations_dir = os.path.join(data_path, 'train', 'json')
+        train_images_dir = os.path.join(data_path, 'train', 'items')
+        
+        val_annotations_dir = os.path.join(data_path, 'validation', 'json')
+        val_images_dir = os.path.join(data_path, 'validation', 'items')
+        
+        
+        train_dataset = DtlpyJsonClassificationDataset(
+            model_entity=self.model_entity,
+            images_dir=train_images_dir,
+            annotations_dir=train_annotations_dir,
+            transform=data_transforms['train'],
+            labels_to_id_map=self.model_entity.label_to_id_map
+        )
+        val_dataset = DtlpyJsonClassificationDataset(
+            model_entity=self.model_entity,
+            images_dir=val_images_dir,
+            annotations_dir=val_annotations_dir,
+            transform=data_transforms['val'],
+            labels_to_id_map=self.model_entity.label_to_id_map
+        )
         dataloaders = {'train': DataLoader(train_dataset,
                                            batch_size=batch_size,
-                                           shuffle=True,
-                                           collate_fn=collate_torch),
+                                           shuffle=True),
                        'val': DataLoader(val_dataset,
                                          batch_size=batch_size,
-                                         collate_fn=collate_torch,
                                          shuffle=True
                                          )}
         #################
         # prepare model #
         #################
 
-        n_classes = len(train_dataset.id_to_label_map)
+        n_classes = len(self.model_entity.label_to_id_map)
         logger.info('Setting last layer for {} classes'.format(n_classes))
 
         criterion = torch.nn.CrossEntropyLoss()
@@ -181,7 +187,6 @@ class TIMMAdapter(dl.BaseModelAdapter):
             if end_training:
                 break
             logger.info('Epoch {}/{} Start...'.format(epoch, num_epochs))
-
             epoch_time = time.time()
             # Each epoch has a training and validation phase
             for phase in ['train', 'val']:
@@ -250,7 +255,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
                         best_model_wts = copy.deepcopy(self.model.state_dict())
                         logger.info(
                             f'Validation loss decreased ({best_loss:.6f} --> {epoch_loss:.6f}).  Saving model ...')
-                        torch.save(self.model, os.path.join(output_path, 'best.pth'))
+                        torch.save(self.model.state_dict(), os.path.join(output_path, 'best.pth'))
                         # self.model_entity.bucket.sync(local_path=output_path)
 
                     else:
@@ -337,7 +342,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
             report.add(fig=confusion, icol=0, irow=2)
             # Upload the report to a dataset
             report.upload(dataset=self.model_entity.dataset,
-                          remote_path="/reports",
+                          remote_path="/.dataloop/reports",
                           remote_name=f"confusion_model_{self.model_entity.id}.json")
         except Exception:
             logger.warning('Failed creating shebang confusion report! Continue without...')
@@ -355,3 +360,52 @@ class TIMMAdapter(dl.BaseModelAdapter):
                 'Add a validation set DQL filter in the dl.Model metadata'
             )
         return
+
+
+class DtlpyJsonClassificationDataset(torch.utils.data.Dataset):
+    def __init__(self, model_entity, images_dir, annotations_dir, transform=None, labels_to_id_map=None):
+        self.model_entity = model_entity
+        self.images_dir = images_dir
+        self.annotations_dir = annotations_dir
+        self.transform = transform
+        self.labels_to_id_map = labels_to_id_map or {}
+        self.samples = []
+        for root, _, files in os.walk(annotations_dir):
+            for f in files:
+                if f.lower().endswith('.json'):
+                    json_path = os.path.join(root, f)
+                    with open(json_path, 'r') as jf:
+                        data = json.load(jf)
+                    # Find the first annotation of type 'class' and with a 'label' field
+                    ann = None
+                    for a in data.get('annotations', []):
+                        if a.get('type') == 'class' and 'label' in a:
+                            ann = a
+                            break
+                    if ann is not None:
+                        label = ann['label']
+                        # Try to get the image path from 'filename' or 'name'
+                        img_rel_path = data.get('filename') or data.get('name')
+                        if img_rel_path:
+                            # Remove leading slash if present
+                            img_rel_path = img_rel_path.lstrip('/')
+                            img_path = os.path.join(images_dir, img_rel_path)
+                            if os.path.exists(img_path):
+                                self.samples.append((img_path, label))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        img_path, label = self.samples[idx]
+        original_image = Image.open(img_path).convert('RGB')
+        if self.transform:
+            image = self.transform(original_image)
+        class_idx = self.labels_to_id_map[label]
+        ## dump file
+        debug = False
+        if debug is True:
+            dump_path = os.path.join('tmp', self.model_entity.id, '.debug', f'{label}')
+            os.makedirs(dump_path, exist_ok=True)
+            original_image.save(os.path.join(dump_path, f'{idx}.png'))
+        return {'image': image, 'annotations': torch.tensor([class_idx], dtype=torch.long)}

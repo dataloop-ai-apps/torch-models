@@ -1,7 +1,7 @@
 {
   "name": "mobilenet",
   "displayName": "MobileNet",
-  "version": "0.1.38",
+  "version": "0.1.49",
   "scope": "public",
   "description": "MobileNet application for image classification.",
   "attributes": {
@@ -17,7 +17,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.38"
+    "gitTag": "0.1.49"
   },
   "components": {
     "computeConfigs": [
@@ -26,7 +26,7 @@
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.4",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -37,20 +37,17 @@
       },
       {
         "name": "mobilenet-train-evaluate",
-        "versions": {
-          "dtlpy": "1.90.39"
-        },
+        "executionTimeout": 432000,
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.4",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.7",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
             "maxReplicas": 2,
             "queueLength": 100
-          },
-          "executionTimeout": 36000000
+          }
         }
       }
     ],
@@ -81,6 +78,11 @@
                 "type": "Dataset",
                 "name": "dataset",
                 "description": "Dataloop Dataset Entity"
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
               }
             ],
             "output": [

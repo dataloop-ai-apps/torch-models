@@ -430,22 +430,38 @@ class ModelAdapter(dl.BaseModelAdapter):
 
     @staticmethod
     def dl_collate(batch):
+        """
+        Custom collate function for DataLoader.
+        
+        FIX: DAT-2065
+        Note: We create a single combined semantic segmentation mask per image rather than
+        separate binary masks per annotation. This ensures all masks have a consistent shape
+        [1, H, W] across the batch, which is required for torch.stack() in the training loop.
+        Previously, masks had shape [num_annotations, H, W] which caused RuntimeError when
+        batching images with different annotation counts.
+        """
         ims = torch.stack([torch.transpose(b['image'].float(), 2, 1) for b in batch])
         tgs = list()
         for b in batch:
-            masks = list()
-            for seg in b['segment']:
-                mask = np.zeros(shape=b['image'].shape[1:])
+            # Create a single combined semantic segmentation mask
+            # where each pixel contains the class index (0 = background)
+            combined_mask = np.zeros(shape=b['image'].shape[1:], dtype=np.int64)
+            
+            for seg, class_id in zip(b['segment'], b['class']):
+                mask = np.zeros(shape=b['image'].shape[1:], dtype=np.uint8)
                 mask = cv2.drawContours(
                     image=mask,
                     contours=[np.asarray(seg).astype('int')],
                     contourIdx=-1,
-                    color=True,
+                    color=1,
                     thickness=-1
                 )
-                masks.append(mask)
+                # Assign the class_id to pixels belonging to this segment
+                combined_mask[mask == 1] = class_id
+                
             boxes = torch.as_tensor(b['box'], dtype=torch.float32)
-            masks = torch.as_tensor(np.asarray(masks), dtype=torch.uint8)
+            # Store the combined mask with shape [1, H, W] for consistency
+            masks = torch.as_tensor(combined_mask, dtype=torch.int64).unsqueeze(0)
             labels = torch.Tensor(b['class']).to(torch.int64)
             tgs.append(
                 {'boxes': boxes,

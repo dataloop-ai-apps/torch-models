@@ -267,7 +267,8 @@
           "augmentation": true,
           "conf_threshold": 0.8,
           "patience_epochs": 10,
-          "early_stopping": true
+          "early_stopping": true,
+          "debug_inference": false
         },
         "inputType": "image",
         "outputType": "segment",

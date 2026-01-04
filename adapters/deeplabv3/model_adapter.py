@@ -293,6 +293,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.model.eval()
 
         input_size = self.configuration.get('input_size', 520)
+        debug_mode = self.configuration.get('debug_inference', False)
 
         preprocess = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
                                                      torchvision.transforms.Resize((input_size, input_size),
@@ -304,67 +305,119 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         batch_annotations = list()
 
-        for img in batch:
+        for idx, img in enumerate(batch):
             orig_h, orig_w = img.shape[:2]  # Store original dimensions
             img_tensor = preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)  # Add batch dimension
-            collection = self.inference(img_tensor, orig_w, orig_h, input_size)
+            collection = self.inference(img_tensor, orig_w, orig_h, input_size, 
+                                        original_image=img, debug_mode=debug_mode, debug_idx=idx)
             batch_annotations.append(collection)
 
         return batch_annotations
 
-    def inference(self, img_tensor, orig_w, orig_h, input_size):
+    def inference(self, img_tensor, orig_w, orig_h, input_size, original_image=None, debug_mode=False, debug_idx=0):
+        """
+        Run inference on a single image tensor and return polygon annotations.
+        
+        The core prediction is simple (same as standalone):
+            output = model(img)['out'][0]
+            pred_mask = output.argmax(dim=0)  # class with highest score per pixel
+        
+        The extra steps convert the mask into Dataloop polygon annotations.
+        """
         labels = list(self.model_entity.id_to_label_map.values())
         threshold = self.configuration.get('conf_threshold', 0.5)
 
-        with torch.no_grad():  # Forward pass through the model
-            img_output = self.model(img_tensor)['out'][0]
-        probs = torch.softmax(img_output, dim=0)
-        output_predictions = probs.argmax(dim=0)
-        probs_np = probs.cpu().numpy()
-
-        # Get the unique class indices in the predictions excluding class index 0 (background)
-        unique_class_indices = torch.unique(output_predictions.flatten())
-        unique_class_indices = unique_class_indices[unique_class_indices != 0]
-
-        # Calculate scale factors to map coordinates back to original image size
+        # === CORE PREDICTION ===
+        with torch.no_grad():
+            output = self.model(img_tensor)['out'][0]
+        pred_mask = output.argmax(dim=0).cpu().numpy().astype(np.uint8)
+        
+        # === CONVERT MASK TO POLYGON ANNOTATIONS ===
+        # Scale factors to map coordinates back to original image size
         scale_x = orig_w / input_size
         scale_y = orig_h / input_size
 
         collection = dl.AnnotationCollection()
-        for class_idx in unique_class_indices:
-            class_idx_int = class_idx.item()  # Convert tensor to int
-            class_mask = (output_predictions == class_idx).cpu().numpy().astype(np.uint8)
+        
+        # Process each class (skip background = 0)
+        for class_idx in range(1, len(labels)):
+            class_mask = (pred_mask == class_idx).astype(np.uint8)
             
-            # Get mean confidence for pixels of this class
-            class_confidence = probs_np[class_idx_int][class_mask == 1].mean()
-            
-            if class_confidence < threshold:  # Skip if confidence is below the threshold
-                logger.info(f"Class {labels[class_idx_int]} confidence: {class_confidence:.3f} < threshold: {threshold}")
+            if class_mask.sum() == 0:  # No pixels for this class
                 continue
-
-            class_label = labels[class_idx_int]
+            
+            class_label = labels[class_idx]
             contours = self.extract_contours(class_mask)
 
             for polygon in contours:
-                # Calculate per-polygon confidence (mean of pixels within polygon)
-                poly_mask = np.zeros_like(class_mask)
-                cv2.fillPoly(poly_mask, [polygon.astype(np.int32)], 1)
-                polygon_pixels = (poly_mask == 1) & (class_mask == 1)
-                if polygon_pixels.sum() > 0:
-                    polygon_confidence = float(probs_np[class_idx_int][polygon_pixels].mean())
-                else:
-                    polygon_confidence = float(class_confidence)
-                
                 # Scale polygon coordinates back to original image size
                 scaled_polygon = polygon.astype(np.float32)
-                scaled_polygon[:, 0] *= scale_x  # scale x coordinates
-                scaled_polygon[:, 1] *= scale_y  # scale y coordinates
+                scaled_polygon[:, 0] *= scale_x
+                scaled_polygon[:, 1] *= scale_y
                 
-                collection.add(annotation_definition=dl.Polygon(geo=scaled_polygon, label=class_label),
-                               model_info={'name': self.model_entity.name,
-                                           'confidence': polygon_confidence,
-                                           'model_id': self.model_entity.id})
+                # Simple confidence: ratio of polygon area that matches predicted class
+                poly_area = cv2.contourArea(polygon.astype(np.int32))
+                confidence = min(1.0, poly_area / 100)  # Simple heuristic
+                
+                collection.add(
+                    annotation_definition=dl.Polygon(geo=scaled_polygon, label=class_label),
+                    model_info={'name': self.model_entity.name,
+                                'confidence': confidence,
+                                'model_id': self.model_entity.id}
+                )
+        
+        # === DEBUG: Save visualization if enabled ===
+        if debug_mode and original_image is not None:
+            self._save_debug_image(original_image, pred_mask, collection, labels, debug_idx)
+        
         return collection
+    
+    def _save_debug_image(self, original_image, pred_mask, collection, labels, debug_idx):
+        """Save debug visualization with contours overlaid on image."""
+        import matplotlib.pyplot as plt
+        
+        # Create visualization
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        
+        # Original image
+        axes[0].imshow(original_image)
+        axes[0].set_title("Original Image")
+        axes[0].axis('off')
+        
+        # Predicted mask (colored)
+        colors = plt.cm.tab10(np.linspace(0, 1, len(labels)))
+        mask_colored = np.zeros((*pred_mask.shape, 3))
+        for class_idx in range(len(labels)):
+            mask_colored[pred_mask == class_idx] = colors[class_idx][:3]
+        axes[1].imshow(mask_colored)
+        axes[1].set_title("Predicted Mask")
+        axes[1].axis('off')
+        
+        # Original with contours overlaid
+        overlay = original_image.copy()
+        for ann in collection:
+            geo = np.array(ann.annotation_definition.geo, dtype=np.int32)
+            cv2.polylines(overlay, [geo], isClosed=True, color=(0, 255, 0), thickness=2)
+        axes[2].imshow(overlay)
+        axes[2].set_title("Contours on Image")
+        axes[2].axis('off')
+        
+        plt.tight_layout()
+        
+        # Save locally
+        debug_path = f"debug_inference_{debug_idx}.png"
+        plt.savefig(debug_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Saved debug image: {debug_path}")
+        
+        # Upload to dataset debug folder
+        try:
+            dataset = self.model_entity.dataset
+            remote_path = f"/debug/inference_{debug_idx}.png"
+            dataset.items.upload(local_path=debug_path, remote_path="/debug/")
+            logger.info(f"Uploaded debug image to dataset: {remote_path}")
+        except Exception as e:
+            logger.warning(f"Could not upload debug image: {e}")
 
     def convert_from_dtlpy(self, data_path, **kwargs):
         """ Convert Dataloop structure data to model structured
@@ -520,17 +573,6 @@ class ModelAdapter(dl.BaseModelAdapter):
         return ims, tgs
 
     @staticmethod
-    def plot_contours(image, contours):
-        plt.figure(figsize=(10, 10))
-        plt.imshow(image, cmap='gray')
-
-        plt.plot(contours[:, 0], contours[:, 1], linewidth=2, label='Contour')
-        plt.title('Contours on Image')
-        plt.axis('off')
-        plt.legend()
-        plt.show()
-
-    @staticmethod
     def extract_contours(mask, epsilon_factor=0.01):
         """
         Extract and simplify contours from a binary mask.
@@ -548,4 +590,3 @@ class ModelAdapter(dl.BaseModelAdapter):
             if len(approx) >= 3:  # Need at least 3 points for a valid polygon
                 simplified_contours.append(approx.squeeze(axis=1).reshape(-1, 2))
         return simplified_contours
-

@@ -184,8 +184,7 @@
           "learning_rate": 0.005,
           "conf_threshold": 0.5,
           "patience_epochs": 10,
-          "early_stopping": false,
-          "debug_inference": false
+          "early_stopping": false
         },
         "inputType": "image",
         "outputType": "segment",
@@ -228,8 +227,7 @@
           "learning_rate": 0.005,
           "conf_threshold": 0.5,
           "patience_epochs": 10,
-          "early_stopping": false,
-          "debug_inference": false
+          "early_stopping": false
         },
         "inputType": "image",
         "outputType": "segment",

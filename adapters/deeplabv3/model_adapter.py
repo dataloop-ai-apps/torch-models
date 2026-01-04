@@ -357,6 +357,9 @@ class ModelAdapter(dl.BaseModelAdapter):
                 poly_area = cv2.contourArea(polygon.astype(np.int32))
                 confidence = min(1.0, poly_area / 100)  # Simple heuristic
                 
+                if confidence < threshold:
+                    continue
+                
                 collection.add(
                     annotation_definition=dl.Polygon(geo=scaled_polygon, label=class_label),
                     model_info={'name': self.model_entity.name,

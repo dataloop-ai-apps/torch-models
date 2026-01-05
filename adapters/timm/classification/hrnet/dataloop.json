@@ -1,7 +1,7 @@
 {
   "name": "hrnet",
   "displayName": "HRNet",
-  "version": "0.1.49",
+  "version": "0.1.50",
   "scope": "public",
   "description": "HRNet application for image classification.",
   "attributes": {
@@ -17,7 +17,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/torch-models.git",
-    "gitTag": "0.1.49"
+    "gitTag": "0.1.50"
   },
   "components": {
     "computeConfigs": [

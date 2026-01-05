@@ -78,8 +78,8 @@ class ModelAdapter(dl.BaseModelAdapter):
         :param data_path: `str` local File System path to where the data was downloaded and converted at
         :param output_path: `str` local File System path where to dump training mid-results (checkpoints, logs...)
         """
-        num_epochs = self.configuration.get('num_epochs', 100)
-        batch_size = self.configuration.get('batch_size', 64)
+        num_epochs = self.configuration.get('num_epochs', 50)
+        batch_size = self.configuration.get('batch_size', 4)
         input_size = self.configuration.get('input_size', 520)
         augmentation = self.configuration.get('aug', True)
         on_epoch_end_callback = kwargs.get('on_epoch_end_callback')
@@ -164,9 +164,10 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         criterion = torch.nn.CrossEntropyLoss()  # For multi-class segmentation
         # Observe that all parameters are being optimized
-        optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
-        # Decay LR by a factor of 0.1 every 7 epochs
-        exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
+        lr = self.configuration.get('learning_rate', 0.005)
+        optimizer = optim.SGD(self.model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
+        # Decay LR by a factor of 0.1 - slower decay for better convergence
+        exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=15, gamma=0.1)
 
         since = time.time()
 
@@ -291,10 +292,11 @@ class ModelAdapter(dl.BaseModelAdapter):
         """
         self.model.eval()
 
-        # input_size = self.configuration.get('input_size', 224)
+        input_size = self.configuration.get('input_size', 520)
 
         preprocess = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
-                                                     # torchvision.transforms.Resize((input_size, input_size)),
+                                                     torchvision.transforms.Resize((input_size, input_size),
+                                                                                   interpolation=InterpolationMode.BILINEAR),
                                                      self.gray_to_rgb,
                                                      torchvision.transforms.ToTensor(),
                                                      torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -303,42 +305,68 @@ class ModelAdapter(dl.BaseModelAdapter):
         batch_annotations = list()
 
         for img in batch:
+            orig_h, orig_w = img.shape[:2]  # Store original dimensions
             img_tensor = preprocess(img.astype('uint8')).unsqueeze(0).to(self.device)  # Add batch dimension
-            collection = self.inference(img_tensor)
+            collection = self.inference(img_tensor, orig_w, orig_h, input_size)
             batch_annotations.append(collection)
 
         return batch_annotations
 
-    def inference(self, img_tensor):
+    def inference(self, img_tensor, orig_w, orig_h, input_size):
+        """
+        Run inference on a single image tensor and return polygon annotations.
+        
+        The core prediction is simple (same as standalone):
+            output = model(img)['out'][0]
+            pred_mask = output.argmax(dim=0)  # class with highest score per pixel
+        
+        The extra steps convert the mask into Dataloop polygon annotations.
+        """
         labels = list(self.model_entity.id_to_label_map.values())
-        threshold = self.configuration.get('conf_threshold', 0.8)
+        threshold = self.configuration.get('conf_threshold', 0.5)
 
-        with torch.no_grad():  # Forward pass through the model
-            img_output = self.model(img_tensor)['out'][0]
-        probs = torch.softmax(img_output, dim=0)
-        output_predictions = probs.argmax(dim=0)
-
-        # Get the unique class indices in the predictions excluding class index 0
-        unique_class_indices = torch.unique(output_predictions.flatten())
-        unique_class_indices = unique_class_indices[unique_class_indices != 0]
+        # === CORE PREDICTION ===
+        with torch.no_grad():
+            output = self.model(img_tensor)['out'][0]
+        pred_mask = output.argmax(dim=0).cpu().numpy().astype(np.uint8)
+        
+        # === CONVERT MASK TO POLYGON ANNOTATIONS ===
+        # Scale factors to map coordinates back to original image size
+        scale_x = orig_w / input_size
+        scale_y = orig_h / input_size
 
         collection = dl.AnnotationCollection()
-        for class_idx in unique_class_indices:
-            confidence = probs[class_idx].cpu().numpy().max()
-            if confidence < threshold:  # Skip if confidence is below the threshold
-                logger.info(f"Confidence:{confidence} , is lower than threshold: {threshold}")
+        
+        # Process each class (skip background = 0)
+        for class_idx in range(1, len(labels)):
+            class_mask = (pred_mask == class_idx).astype(np.uint8)
+            
+            if class_mask.sum() == 0:  # No pixels for this class
                 continue
-
+            
             class_label = labels[class_idx]
-            class_mask = (output_predictions == class_idx).cpu().numpy().astype(np.uint8)
             contours = self.extract_contours(class_mask)
-            # self.plot_contours(img_tensor.squeeze(0).permute(1, 2, 0).cpu().numpy(), contours[0])
 
             for polygon in contours:
-                collection.add(annotation_definition=dl.Polygon(geo=polygon, label=class_label),
-                               model_info={'name': self.model_entity.name,
-                                           'confidence': confidence,
-                                           'model_id': self.model_entity.id})
+                # Scale polygon coordinates back to original image size
+                scaled_polygon = polygon.astype(np.float32)
+                scaled_polygon[:, 0] *= scale_x
+                scaled_polygon[:, 1] *= scale_y
+                
+                # Simple confidence: ratio of polygon area that matches predicted class
+                poly_area = cv2.contourArea(polygon.astype(np.int32))
+                confidence = min(1.0, poly_area / 100)  # Simple heuristic
+                
+                if confidence < threshold:
+                    continue
+                
+                collection.add(
+                    annotation_definition=dl.Polygon(geo=scaled_polygon, label=class_label),
+                    model_info={'name': self.model_entity.name,
+                                'confidence': confidence,
+                                'model_id': self.model_entity.id}
+                )
+        
         return collection
 
     def convert_from_dtlpy(self, data_path, **kwargs):
@@ -430,22 +458,58 @@ class ModelAdapter(dl.BaseModelAdapter):
 
     @staticmethod
     def dl_collate(batch):
-        ims = torch.stack([torch.transpose(b['image'].float(), 2, 1) for b in batch])
+        """
+        Custom collate function for DataLoader.
+        
+        Note: We create a single combined semantic segmentation mask per image rather than
+        separate binary masks per annotation. This ensures all masks have a consistent shape
+        [1, H, W] across the batch, which is required for torch.stack() in the training loop.
+        Previously, masks had shape [num_annotations, H, W] which caused RuntimeError when
+        batching images with different annotation counts.
+        """
+        # Stack images - b['image'] should be (C, H, W) from DatasetGeneratorTorch
+        ims = torch.stack([b['image'].float() for b in batch])
         tgs = list()
+        
         for b in batch:
-            masks = list()
-            for seg in b['segment']:
-                mask = np.zeros(shape=b['image'].shape[1:])
+            # Create a single combined semantic segmentation mask
+            # where each pixel contains the class index (0 = background)
+            # b['image'].shape is (C, H, W), so shape[1:] gives (H, W)
+            target_h, target_w = b['image'].shape[1:]
+            combined_mask = np.zeros(shape=(target_h, target_w), dtype=np.int64)
+            
+            # Calculate original image dimensions from segment coordinates
+            # Segments are in original image space, need to scale to resized image
+            if len(b['segment']) > 0:
+                all_segs = np.concatenate([np.asarray(s) for s in b['segment']], axis=0)
+                orig_w = max(int(np.ceil(all_segs[:, 0].max())) + 1, 1)
+                orig_h = max(int(np.ceil(all_segs[:, 1].max())) + 1, 1)
+                scale_x = target_w / orig_w
+                scale_y = target_h / orig_h
+            else:
+                scale_x, scale_y = 1.0, 1.0
+            
+            for seg, class_id in zip(b['segment'], b['class']):
+                mask = np.zeros(shape=(target_h, target_w), dtype=np.uint8)
+                # Scale segment coordinates from original to resized image space
+                seg_array = np.asarray(seg).astype(np.float32)
+                seg_array[:, 0] *= scale_x  # scale x
+                seg_array[:, 1] *= scale_y  # scale y
+                seg_scaled = seg_array.astype('int')
+                
                 mask = cv2.drawContours(
                     image=mask,
-                    contours=[np.asarray(seg).astype('int')],
+                    contours=[seg_scaled],
                     contourIdx=-1,
-                    color=True,
+                    color=1,
                     thickness=-1
                 )
-                masks.append(mask)
+                # Assign the class_id to pixels belonging to this segment
+                combined_mask[mask == 1] = class_id
+                
             boxes = torch.as_tensor(b['box'], dtype=torch.float32)
-            masks = torch.as_tensor(np.asarray(masks), dtype=torch.uint8)
+            # Store the combined mask with shape [1, H, W] for consistency
+            masks = torch.as_tensor(combined_mask, dtype=torch.int64).unsqueeze(0)
             labels = torch.Tensor(b['class']).to(torch.int64)
             tgs.append(
                 {'boxes': boxes,
@@ -459,19 +523,21 @@ class ModelAdapter(dl.BaseModelAdapter):
         return ims, tgs
 
     @staticmethod
-    def plot_contours(image, contours):
-        plt.figure(figsize=(10, 10))
-        plt.imshow(image, cmap='gray')
-
-        plt.plot(contours[:, 0], contours[:, 1], linewidth=2, label='Contour')
-        plt.title('Contours on Image')
-        plt.axis('off')
-        plt.legend()
-        plt.show()
-
-    @staticmethod
-    def extract_contours(mask):
+    def extract_contours(mask, epsilon_factor=0.01):
+        """
+        Extract and simplify contours from a binary mask.
+        
+        Args:
+            mask: Binary mask (H, W)
+            epsilon_factor: Controls polygon simplification (higher = simpler polygon)
+        """
         contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if len(contours) > 0:
-            contours = [contour.squeeze(axis=1).reshape(-1, 2) for contour in contours]
-        return contours
+        simplified_contours = []
+        for contour in contours:
+            # Approximate the contour to reduce jagged edges
+            epsilon = epsilon_factor * cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, epsilon, True)
+            if len(approx) >= 3:  # Need at least 3 points for a valid polygon
+                simplified_contours.append(approx.squeeze(axis=1).reshape(-1, 2))
+        return simplified_contours
+    

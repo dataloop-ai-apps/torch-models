@@ -541,35 +541,3 @@ class ModelAdapter(dl.BaseModelAdapter):
                 simplified_contours.append(approx.squeeze(axis=1).reshape(-1, 2))
         return simplified_contours
     
-    
-if __name__ == "__main__":
-    
-    dl.setenv('prod')
-     
-    # fine tune model
-    model_entity = dl.models.get(model_id='695a48a5e82a9c31a20ade4c')
-    # model_entity.status = "training"
-    model_entity.dataset_id = "6926a54eba738c9b9a77bfeb"
-    # subsets = {
-    #     "train": json.dumps(dl.Filters(field="metadata.system.tags.train", values=True).prepare()),
-    #     "validation": json.dumps(dl.Filters(field="metadata.system.tags.validation", values=True).prepare()),
-    # }
-    model_entity.metadata["system"]={}
-    model_entity.metadata["system"]["subsets"] = {
-        "train": dl.Filters(field="metadata.system.tags.train", values=True).prepare(),
-        "validation": dl.Filters(field="metadata.system.tags.validation", values=True).prepare(),
-    }
-    # model_entity.configuration["model_name"] = "HuggingFaceTB/SmolLM-1.7B-Instruct"
-    # model_entity.configuration["num_train_epochs"] = 1
-    # model_entity.configuration["r"] = 2
-    # model_entity.configuration["lora_alpha"] = 4
-    # model_entity.configuration["gradient_accumulation_steps"] = 1
-    # model_entity.configuration["gradient_checkpointing"] = False
-    # model_entity.configuration["log_level"] = "warning"
-    
-    model_entity.update(True)
-
-    model_adapter = ModelAdapter(model_entity=model_entity)
-    model_adapter.train_model(model=model_entity)
-    dl.Ontology
-    dl.Model

@@ -101,8 +101,12 @@ class TIMMAdapter(dl.BaseModelAdapter):
         :param data_path: `str` local File System path to where the data was downloaded and converted at
         :param output_path: `str` local File System path where to dump training mid-results (checkpoints, logs...)
         """
-        num_epochs = self.configuration.get('num_epochs', 10)
-        batch_size = self.configuration.get('batch_size', 64)
+        num_epochs = self.configuration.get('num_epochs', 15)
+        batch_size = self.configuration.get('batch_size', 4)
+        lr = self.configuration.get('lr', 1e-4)
+        weight_decay = self.configuration.get('weight_decay', 1e-2)
+        optimizer_name = self.configuration.get('optimizer', 'adamw')
+        scheduler_name = self.configuration.get('scheduler', 'cosine')
         on_epoch_end_callback = kwargs.get('on_epoch_end_callback')
 
         class ImgAugTransform:
@@ -164,12 +168,29 @@ class TIMMAdapter(dl.BaseModelAdapter):
 
         n_classes = len(self.model_entity.label_to_id_map)
         logger.info('Setting last layer for {} classes'.format(n_classes))
+        self.model.reset_classifier(num_classes=n_classes)
 
         criterion = torch.nn.CrossEntropyLoss()
-        # Observe that all parameters are being optimized
-        optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
-        # Decay LR by a factor of 0.1 every 7 epochs
-        exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
+
+        optimizers = {
+            'adamw': lambda: optim.AdamW(self.model.parameters(), lr=lr, weight_decay=weight_decay),
+            'adam': lambda: optim.Adam(self.model.parameters(), lr=lr, weight_decay=weight_decay),
+            'sgd': lambda: optim.SGD(self.model.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay),
+        }
+        if optimizer_name.lower() not in optimizers:
+            raise ValueError(f"Unsupported optimizer '{optimizer_name}'. Choose from: {list(optimizers.keys())}")
+        optimizer = optimizers[optimizer_name.lower()]()
+        logger.info(f'Using optimizer: {optimizer_name}, lr: {lr}, weight_decay: {weight_decay}')
+
+        schedulers = {
+            'cosine': lambda: optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs),
+            'step': lambda: optim.lr_scheduler.StepLR(optimizer, step_size=max(num_epochs // 3, 1), gamma=0.1),
+            'none': lambda: optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1.0),
+        }
+        if scheduler_name.lower() not in schedulers:
+            raise ValueError(f"Unsupported scheduler '{scheduler_name}'. Choose from: {list(schedulers.keys())}")
+        exp_lr_scheduler = schedulers[scheduler_name.lower()]()
+        logger.info(f'Using scheduler: {scheduler_name}')
 
         since = time.time()
         best_model_wts = copy.deepcopy(self.model.state_dict())

@@ -136,3 +136,5 @@ main.py
 /torch-env
 /.github
 /scripts
+
+.vscode

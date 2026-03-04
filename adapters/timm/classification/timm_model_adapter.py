@@ -44,7 +44,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
         weights_filename = self.model_entity.configuration.get('weights_filename')
         model_path = str(os.path.join(local_path, weights_filename))
         
-        n_classes = len(self.model_entity.labels)
+        n_classes = len(self.model_entity.id_to_label_map)
 
         if weights_filename and os.path.exists(model_path):
             logger.info(f"Loading trained weights for {n_classes} classes")
@@ -168,7 +168,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
         # prepare model #
         #################
 
-        n_classes = len(self.model_entity.labels)
+        n_classes = len(self.model_entity.id_to_label_map)
         logger.info('Setting last layer for {} classes'.format(n_classes))
         self.model.reset_classifier(num_classes=n_classes)
 

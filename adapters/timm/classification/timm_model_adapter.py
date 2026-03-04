@@ -44,9 +44,11 @@ class TIMMAdapter(dl.BaseModelAdapter):
         weights_filename = self.model_entity.configuration.get('weights_filename')
         model_path = str(os.path.join(local_path, weights_filename))
         
+        n_classes = len(self.model_entity.labels)
+
         if weights_filename and os.path.exists(model_path):
-            logger.info(f"Loading trained weights")
-            self.model = timm.create_model(self.configuration.get('model_name'), pretrained=False)
+            logger.info(f"Loading trained weights for {n_classes} classes")
+            self.model = timm.create_model(self.configuration.get('model_name'), pretrained=False, num_classes=n_classes)
             self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         else:
             logger.info("No trained weights file found, loading pretrained model from library")
@@ -166,7 +168,7 @@ class TIMMAdapter(dl.BaseModelAdapter):
         # prepare model #
         #################
 
-        n_classes = len(self.model_entity.label_to_id_map)
+        n_classes = len(self.model_entity.labels)
         logger.info('Setting last layer for {} classes'.format(n_classes))
         self.model.reset_classifier(num_classes=n_classes)
 

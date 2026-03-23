@@ -1,8 +1,6 @@
 FROM hub.dataloop.ai/dtlpy-runner-images/gpu:python3.10_cuda11.8_opencv
 
-USER root
 RUN apt update && apt install -y curl
-
 
 RUN ${DL_PYTHON_EXECUTABLE} -m pip install --upgrade pip
 RUN ${DL_PYTHON_EXECUTABLE} -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118

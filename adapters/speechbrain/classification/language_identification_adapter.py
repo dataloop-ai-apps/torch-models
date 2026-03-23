@@ -1,15 +1,14 @@
-import json
 import os
+import shutil
 import torch
 import torchvision
 import torchaudio
 import dtlpy as dl
-import torch.nn.functional
-import torch.nn
 import logging
-import soundfile
-from speechbrain.inference import EncoderClassifier
 import pathlib
+from speechbrain.inference import EncoderClassifier
+from huggingface_hub import snapshot_download
+
 
 logger = logging.getLogger('LanguageClassifier-adapter')
 
@@ -26,7 +25,7 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
     def __init__(self, model_entity: dl.Model):
         self.confidence_thresh = None
         self.languages_list = None
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__(model_entity)
 
     def load(self, local_path, **kwargs):
@@ -39,11 +38,45 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
         self.languages_list = self.model_entity.labels
         if not self.languages_list:
             raise Exception("Languages list is empty or not found in JSON file.")
-        self.model = EncoderClassifier.from_hparams(source="speechbrain/lang-id-voxlingua107-ecapa",
-                                                    savedir="pretrained_models/lang-id-voxlingua107-ecapa")
+        
+        repo_id = "speechbrain/lang-id-voxlingua107-ecapa"
+        savedir = "pretrained_models/lang-id-voxlingua107-ecapa"
+        snapshot_download(repo_id=repo_id,
+                          local_dir=savedir,
+                          local_dir_use_symlinks=False)
+
+        # NOTE: Windows support for symlinks
+        if os.name == 'nt':
+            def _symlink_or_copy(src, dst, *args, **kwargs):
+                if os.path.abspath(src) == os.path.abspath(dst):
+                    return
+                shutil.copy2(src, dst)
+
+            def _symlink_to_or_copy(self_path, target, target_is_directory=False):
+                src = os.path.abspath(str(target))
+                dst = os.path.abspath(str(self_path))
+                if src == dst:
+                    return
+                if target_is_directory:
+                    shutil.copytree(str(target), str(self_path), dirs_exist_ok=True)
+                else:
+                    shutil.copy2(str(target), str(self_path))
+
+            original_symlink = os.symlink
+            original_symlink_to = pathlib.Path.symlink_to
+            os.symlink = _symlink_or_copy
+            pathlib.Path.symlink_to = _symlink_to_or_copy
+
+        try:
+            self.model = EncoderClassifier.from_hparams(source=savedir,
+                                                        savedir=savedir,
+                                                        run_opts={"device": str(self.device)})
+        finally:
+            # NOTE: Windows support for symlinks
+            if os.name == 'nt':
+                os.symlink = original_symlink
+                pathlib.Path.symlink_to = original_symlink_to
         logger.info(f"Loaded model from library successfully")
-        self.model.to(self.device)
-        self.model.eval()
 
     def prepare_item_func(self, item):
         return item
@@ -61,7 +94,7 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
             filename = item.download(overwrite=True)
             logger.info(f'Language Encoder Classifier predicting {filename}, started.')
             # Get the format from filename and adding it to torchaudio load
-            signal = self.model.load_audio(filename)
+            signal = self.model.load_audio(filename).to(self.device)
             prediction = self.model(signal)
             logger.info(f'Language Encoder Classifier predicting {filename}, done.')
 

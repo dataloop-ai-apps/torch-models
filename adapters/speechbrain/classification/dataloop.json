@@ -24,7 +24,7 @@
         "runtime": {
           "podType": "regular-xs",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.9",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.10",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -39,7 +39,7 @@
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.8",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.1.10",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,

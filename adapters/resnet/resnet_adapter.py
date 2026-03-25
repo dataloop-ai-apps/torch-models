@@ -57,7 +57,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             files = os.listdir(local_path)
             logger.info(f"Files in the directory: {files}")
         except Exception as e:
-            logger.error(f"Error listing directory contents: {str(e)}")
+            logger.error("Error listing directory contents: %s", type(e).__name__)
         self.configuration['weights_filename'] = 'best.pth'
 
     def train(self, data_path, output_path, **kwargs):

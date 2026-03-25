@@ -1,11 +1,8 @@
-import os
-import shutil
 import torch
 import torchvision
 import torchaudio
 import dtlpy as dl
 import logging
-import pathlib
 from speechbrain.inference import EncoderClassifier
 from huggingface_hub import snapshot_download
 
@@ -46,38 +43,9 @@ class LanguageClassifierAdapter(dl.BaseModelAdapter):
                           local_dir=savedir,
                           local_dir_use_symlinks=False)
         logger.info(f"Download complete. Loading model on device: {self.device}")
-
-        # NOTE: Windows support for symlinks
-        if os.name == 'nt':
-            def _symlink_or_copy(src, dst, *args, **kwargs):
-                if os.path.abspath(src) == os.path.abspath(dst):
-                    return
-                shutil.copy2(src, dst)
-
-            def _symlink_to_or_copy(self_path, target, target_is_directory=False):
-                src = os.path.abspath(str(target))
-                dst = os.path.abspath(str(self_path))
-                if src == dst:
-                    return
-                if target_is_directory:
-                    shutil.copytree(str(target), str(self_path), dirs_exist_ok=True)
-                else:
-                    shutil.copy2(str(target), str(self_path))
-
-            original_symlink = os.symlink
-            original_symlink_to = pathlib.Path.symlink_to
-            os.symlink = _symlink_or_copy
-            pathlib.Path.symlink_to = _symlink_to_or_copy
-
-        try:
-            self.model = EncoderClassifier.from_hparams(source=savedir,
-                                                        savedir=savedir,
-                                                        run_opts={"device": str(self.device)})
-        finally:
-            # NOTE: Windows support for symlinks
-            if os.name == 'nt':
-                os.symlink = original_symlink
-                pathlib.Path.symlink_to = original_symlink_to
+        self.model = EncoderClassifier.from_hparams(source=savedir,
+                                                    savedir=savedir,
+                                                    run_opts={"device": str(self.device)})
         logger.info(f"Model loaded successfully on device: {self.device}, languages: {len(self.languages_list)}")
 
     def prepare_item_func(self, item):

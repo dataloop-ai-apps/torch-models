@@ -1,15 +1,15 @@
-# Torch Dataloop Model Adapters 🚀
+# Torch DDOE Model Adapters 🚀
 
-Welcome to the Torch Dataloop Model Adapters repository! 🎉 This collection features a variety of pre-trained models built using PyTorch, a leading open-source machine learning library. These models are designed to tackle a range of tasks including image classification, object detection, and semantic segmentation. This README provides a detailed overview of the available model adapters within the Dataloop platform. 📚
+Welcome to the Torch DDOE Model Adapters repository! 🎉 This collection features a variety of pre-trained models built using PyTorch, a leading open-source machine learning library. These models are designed to tackle a range of tasks including image classification, object detection, and semantic segmentation. This README provides a detailed overview of the available model adapters within the DDOE platform. 📚
 
 ## Documentation 📖
 
-For comprehensive documentation on model management, visit the [Dataloop Model Management Documentation](https://dataloop.ai/docs).
+For comprehensive documentation on model management, visit the [DDOE Model Management Documentation](https://dataloop.ai/docs).
 For developer tutorials and guides, check out the [Developers Documentation](https://developers.dataloop.ai/tutorials/model_management/).
 
 ## Marketplace 🛒
 
-Explore a wide range of Torch models available in the Dataloop [Marketplace](https://console.dataloop.ai/marketplace). The marketplace offers a variety of pre-trained models ready to be integrated into your projects, enabling you to leverage state-of-the-art machine learning capabilities with ease.
+Explore a wide range of Torch models available in the DDOE [Marketplace](https://console.dataloop.ai/marketplace). The marketplace offers a variety of pre-trained models ready to be integrated into your projects, enabling you to leverage state-of-the-art machine learning capabilities with ease.
 
 ## SDK Usage 🛠️
 
@@ -67,16 +67,16 @@ Now you have a new model connected to your dataset, ready for training. For more
 
 This repo is a model integration
 between [PyTorch DeepLabV3](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101/) object
-detection model and [Dataloop](https://dataloop.ai/).
+detection model and [DDOE](https://dataloop.ai/).
 
 DeepLab is a series of semantic segmentation models designed for high-performance scene understanding tasks.
 By leveraging techniques such as atrous convolution and spatial pyramid pooling, DeepLab achieves state-of-the-art
 performance in semantic segmentation while maintaining efficiency. This integration aims to provide a seamless workflow
-for utilizing DeepLab models within the Dataloop platform.
+for utilizing DeepLab models within the DDOE platform.
 
 ## Requirements
 
-* An account in the [Dataloop platform](https://console.dataloop.ai/)
+* An account in the [DDOE platform](https://console.dataloop.ai/)
 * dtlpy
 * torch>=1.8
 * torchvision>0.9
@@ -91,7 +91,7 @@ for utilizing DeepLab models within the Dataloop platform.
 To install the package and create the DeepLabV3 model adapter, you will need
 a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and
 a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
-Dataloop platform. The dataset should
+DDOE platform. The dataset should
 have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory)
 containing its training and validation subsets.
 
@@ -134,13 +134,13 @@ The basic configurations included are:
 
 ## Introduction
 
-This repository provides a model integration between the ResNet classification model and the [Dataloop](https://dataloop.ai/) platform.
+This repository provides a model integration between the ResNet classification model and the [DDOE](https://dataloop.ai/) platform.
 
-ResNet (Residual Networks) are a series of deep learning models designed for image classification tasks. They are known for their ability to train very deep networks by using residual connections, which help mitigate the vanishing gradient problem. This integration aims to provide a seamless workflow for utilizing ResNet models within the Dataloop platform.
+ResNet (Residual Networks) are a series of deep learning models designed for image classification tasks. They are known for their ability to train very deep networks by using residual connections, which help mitigate the vanishing gradient problem. This integration aims to provide a seamless workflow for utilizing ResNet models within the DDOE platform.
 
 ## Requirements
 
-* An account in the [Dataloop platform](https://console.dataloop.ai/)
+* An account in the [DDOE platform](https://console.dataloop.ai/)
 * dtlpy
 * torch>=1.8
 * torchvision>0.9
@@ -150,7 +150,7 @@ ResNet (Residual Networks) are a series of deep learning models designed for ima
 
 ## Installation
 
-To install the package and create the ResNet model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the Dataloop platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory) containing its training and validation subsets.
+To install the package and create the ResNet model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the DDOE platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory) containing its training and validation subsets.
 
 ## Cloning
 
@@ -177,7 +177,7 @@ The basic configurations included are:
 
 ## Introduction
 
-This repo is a model integration between SpeechBrain for audio classification and [Dataloop](https://dataloop.ai/).
+This repo is a model integration between SpeechBrain for audio classification and [DDOE](https://dataloop.ai/).
 
 SpeechBrain is an open-source PyTorch toolkit that accelerates Conversational AI development, i.e., the technology behind speech assistants, chatbots, and large language models.
 ## Model Available
@@ -192,12 +192,12 @@ SpeechBrain is an open-source PyTorch toolkit that accelerates Conversational AI
 - speechbrain 
 - torchaudio 
 - soundfile
-- An account in the [Dataloop platform](https://console.dataloop.ai/)
+- An account in the [DDOE platform](https://console.dataloop.ai/)
 
 ## Installation
 
 To install the package and create the SpeechBrain model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
-Dataloop platform.
+DDOE platform.
 
 ## Deployment
 
@@ -229,7 +229,7 @@ We appreciate their efforts in advancing the field and making their work accessi
 
 ## Introduction
 
-This repo is a model integration between TIMM models for classification [TIMM Models](https://huggingface.co/timm) and [Dataloop](https://dataloop.ai/).
+This repo is a model integration between TIMM models for classification [TIMM Models](https://huggingface.co/timm) and [DDOE](https://dataloop.ai/).
 
 PyTorch Image Models (timm) is a collection of image models, layers, utilities, optimizers, schedulers, data-loaders / augmentations, and reference training / validation scripts that aim to pull together a wide variety of SOTA models with ability to reproduce ImageNet training results.
 
@@ -251,12 +251,12 @@ Other variants from these models can be found [here](https://huggingface.co/mode
 - imbalanced-learn
 - imgaug
 - timm
-- An account in the [Dataloop platform](https://console.dataloop.ai/)
+- An account in the [DDOE platform](https://console.dataloop.ai/)
 
 ## Installation
 
 To install the package and create the TIMM model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
-Dataloop platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory), tags or you can use DQL filter to have training and validation subsets.
+DDOE platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory), tags or you can use DQL filter to have training and validation subsets.
 
 ## Training and Fine-tuning
 
@@ -294,17 +294,17 @@ The original models paper and codebase can be found here:
 We appreciate their efforts in advancing the field and making their work accessible to the broader community.
 </details>
 
-## Dataloop Manifest (DPK) Explanation 📜
+## DDOE Manifest (DPK) Explanation 📜
 
 This section provides an explanation of the [DeepLabv3 manifest](adapters\deeplabv3\dataloop.json), which can be used as an example for a *model* application.
 
-### Dataloop Applications
-Dataloop Applications are extensions that integrate seamlessly into the Dataloop ecosystem, providing custom panels, SDK features, and components to enhance your workflow. For more information, visit the [Dataloop Applications Introduction](https://developers.dataloop.ai/tutorials/applications/introduction/chapter).
+### DDOE Applications
+DDOE Applications are extensions that integrate seamlessly into the DDOE ecosystem, providing custom panels, SDK features, and components to enhance your workflow. For more information, visit the [DDOE Applications Introduction](https://developers.dataloop.ai/tutorials/applications/introduction/chapter).
 
-### DPK (Dataloop Package Kit)
-The DPK is a comprehensive package that includes everything needed for your application to function within the Dataloop platform. It contains modules, panels, source code, tests, and the `dataloop.json` manifest, which acts as the application's blueprint.
+### DPK (DDOE Package Kit)
+The DPK is a comprehensive package that includes everything needed for your application to function within the DDOE platform. It contains modules, panels, source code, tests, and the `dataloop.json` manifest, which acts as the application's blueprint.
 
-The Dataloop Manifest (DPK) provides metadata and configuration details for deploying and managing models on the Dataloop platform. Here's an explanation of the key components in the manifest:
+The DDOE Manifest (DPK) provides metadata and configuration details for deploying and managing models on the DDOE platform. Here's an explanation of the key components in the manifest:
 
 - **Name**: The identifier for the model package.
 - **Display Name**: A user-friendly name for the model.

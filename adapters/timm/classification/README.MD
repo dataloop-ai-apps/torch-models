@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This repo is a model integration between TIMM models for classification [TIMM Models](https://huggingface.co/timm) and [Dataloop](https://dataloop.ai/).
+This repo is a model integration between TIMM models for classification [TIMM Models](https://huggingface.co/timm) and [DDOE](https://dataloop.ai/).
 
 PyTorch Image Models (timm) is a collection of image models, layers, utilities, optimizers, schedulers, data-loaders / augmentations, and reference training / validation scripts that aim to pull together a wide variety of SOTA models with ability to reproduce ImageNet training results.
 
@@ -24,12 +24,12 @@ Other variants from these models can be found [here](https://huggingface.co/mode
 - imbalanced-learn
 - imgaug
 - timm
-- An account in the [Dataloop platform](https://console.dataloop.ai/)
+- An account in the [DDOE platform](https://console.dataloop.ai/)
 
 ## Installation
 
 To install the package and create the TIMM model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
-Dataloop platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory), tags or you can use DQL filter to have training and validation subsets.
+DDOE platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory), tags or you can use DQL filter to have training and validation subsets.
 
 ## Training and Fine-tuning
 

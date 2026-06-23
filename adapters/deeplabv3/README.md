@@ -4,16 +4,16 @@
 
 This repo is a model integration
 between [PyTorch DeepLabV3](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101/) object
-detection model and [Dataloop](https://dataloop.ai/).
+detection model and [DDOE](https://dataloop.ai/).
 
 DeepLab is a series of semantic segmentation models designed for high-performance scene understanding tasks.
 By leveraging techniques such as atrous convolution and spatial pyramid pooling, DeepLab achieves state-of-the-art
 performance in semantic segmentation while maintaining efficiency. This integration aims to provide a seamless workflow
-for utilizing DeepLab models within the Dataloop platform.
+for utilizing DeepLab models within the DDOE platform.
 
 ## Requirements
 
-* An account in the [Dataloop platform](https://console.dataloop.ai/)
+* An account in the [DDOE platform](https://console.dataloop.ai/)
 * dtlpy
 * torch>=1.8
 * torchvision>0.9
@@ -28,7 +28,7 @@ for utilizing DeepLab models within the Dataloop platform.
 To install the package and create the DeepLabV3 model adapter, you will need
 a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and
 a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
-Dataloop platform. The dataset should
+DDOE platform. The dataset should
 have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory)
 containing its training and validation subsets.
 

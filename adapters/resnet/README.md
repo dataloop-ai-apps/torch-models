@@ -2,13 +2,13 @@
 
 ## Introduction
 
-This repository provides a model integration between the ResNet classification model and the [Dataloop](https://dataloop.ai/) platform.
+This repository provides a model integration between the ResNet classification model and the [DDOE](https://dataloop.ai/) platform.
 
-ResNet (Residual Networks) are a series of deep learning models designed for image classification tasks. They are known for their ability to train very deep networks by using residual connections, which help mitigate the vanishing gradient problem. This integration aims to provide a seamless workflow for utilizing ResNet models within the Dataloop platform.
+ResNet (Residual Networks) are a series of deep learning models designed for image classification tasks. They are known for their ability to train very deep networks by using residual connections, which help mitigate the vanishing gradient problem. This integration aims to provide a seamless workflow for utilizing ResNet models within the DDOE platform.
 
 ## Requirements
 
-* An account in the [Dataloop platform](https://console.dataloop.ai/)
+* An account in the [DDOE platform](https://console.dataloop.ai/)
 * dtlpy
 * torch>=1.8
 * torchvision>0.9
@@ -18,7 +18,7 @@ ResNet (Residual Networks) are a series of deep learning models designed for ima
 
 ## Installation
 
-To install the package and create the ResNet model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the Dataloop platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory) containing its training and validation subsets.
+To install the package and create the ResNet model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the DDOE platform. The dataset should have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory) containing its training and validation subsets.
 
 ## Cloning
 

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This repo is a model integration between SpeechBrain for audio classification and [Dataloop](https://dataloop.ai/).
+This repo is a model integration between SpeechBrain for audio classification and [DDOE](https://dataloop.ai/).
 
 SpeechBrain is an open-source PyTorch toolkit that accelerates Conversational AI development, i.e., the technology behind speech assistants, chatbots, and large language models.
 ## Model Available
@@ -17,12 +17,12 @@ SpeechBrain is an open-source PyTorch toolkit that accelerates Conversational AI
 - speechbrain 
 - torchaudio 
 - soundfile
-- An account in the [Dataloop platform](https://console.dataloop.ai/)
+- An account in the [DDOE platform](https://console.dataloop.ai/)
 
 ## Installation
 
 To install the package and create the SpeechBrain model adapter, you will need a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
-Dataloop platform.
+DDOE platform.
 
 ## Deployment
 

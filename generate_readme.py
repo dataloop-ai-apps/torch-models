@@ -20,15 +20,15 @@ def find_readmes(base_path):
 def write_main_readme(main_readme_path, readmes, manifest_data):
     with open(main_readme_path, "w", encoding="utf-8") as file:
         file.write(
-            "# Torch Dataloop Model Adapters 🚀\n\n"
-            "Welcome to the Torch Dataloop Model Adapters repository! 🎉 This collection features a variety of pre-trained models built using PyTorch, "
+            "# Torch DDOE Model Adapters 🚀\n\n"
+            "Welcome to the Torch DDOE Model Adapters repository! 🎉 This collection features a variety of pre-trained models built using PyTorch, "
             "a leading open-source machine learning library. These models are designed to tackle a range of tasks including image classification, "
-            "object detection, and semantic segmentation. This README provides a detailed overview of the available model adapters within the Dataloop platform. 📚\n\n"
+            "object detection, and semantic segmentation. This README provides a detailed overview of the available model adapters within the DDOE platform. 📚\n\n"
             "## Documentation 📖\n\n"
-            "For comprehensive documentation on model management, visit the [Dataloop Model Management Documentation](https://dataloop.ai/docs).\n"
+            "For comprehensive documentation on model management, visit the [DDOE Model Management Documentation](https://dataloop.ai/docs).\n"
             "For developer tutorials and guides, check out the [Developers Documentation](https://developers.dataloop.ai/tutorials/model_management/).\n\n"
             "## Marketplace 🛒\n\n"
-            "Explore a wide range of Torch models available in the Dataloop [Marketplace](https://console.dataloop.ai/marketplace). "
+            "Explore a wide range of Torch models available in the DDOE [Marketplace](https://console.dataloop.ai/marketplace). "
             "The marketplace offers a variety of pre-trained models ready to be integrated into your projects, enabling you to leverage state-of-the-art machine learning capabilities with ease.\n\n"
             "## SDK Usage 🛠️\n\n"
             "### Cloning a Model to Your Project\n\n"
@@ -81,17 +81,17 @@ def write_main_readme(main_readme_path, readmes, manifest_data):
             file.write(content)
             file.write("\n</details>\n\n")
 
-        # Add Dataloop Manifest (DPK) Explanation
+        # Add DDOE Manifest (DPK) Explanation
         file.write(
-            "## Dataloop Manifest (DPK) Explanation 📜\n\n"
+            "## DDOE Manifest (DPK) Explanation 📜\n\n"
             "This section provides an explanation of the [DeepLabv3 manifest](adapters\\deeplabv3\\dataloop.json), which can be used as an example for a *model* application.\n\n"
-            "### Dataloop Applications\n"
-            "Dataloop Applications are extensions that integrate seamlessly into the Dataloop ecosystem, providing custom panels, SDK features, and components to enhance your workflow. "
-            "For more information, visit the [Dataloop Applications Introduction](https://developers.dataloop.ai/tutorials/applications/introduction/chapter).\n\n"
-            "### DPK (Dataloop Package Kit)\n"
-            "The DPK is a comprehensive package that includes everything needed for your application to function within the Dataloop platform. "
+            "### DDOE Applications\n"
+            "DDOE Applications are extensions that integrate seamlessly into the DDOE ecosystem, providing custom panels, SDK features, and components to enhance your workflow. "
+            "For more information, visit the [DDOE Applications Introduction](https://developers.dataloop.ai/tutorials/applications/introduction/chapter).\n\n"
+            "### DPK (DDOE Package Kit)\n"
+            "The DPK is a comprehensive package that includes everything needed for your application to function within the DDOE platform. "
             "It contains modules, panels, source code, tests, and the `dataloop.json` manifest, which acts as the application's blueprint.\n\n"
-            "The Dataloop Manifest (DPK) provides metadata and configuration details for deploying and managing models on the Dataloop platform. "
+            "The DDOE Manifest (DPK) provides metadata and configuration details for deploying and managing models on the DDOE platform. "
             "Here's an explanation of the key components in the manifest:\n\n"
             "- **Name**: The identifier for the model package.\n"
             "- **Display Name**: A user-friendly name for the model.\n"

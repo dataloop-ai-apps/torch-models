@@ -320,7 +320,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             output = model(img)['out'][0]
             pred_mask = output.argmax(dim=0)  # class with highest score per pixel
         
-        The extra steps convert the mask into Dataloop polygon annotations.
+        The extra steps convert the mask into DDOE polygon annotations.
         """
         labels = list(self.model_entity.id_to_label_map.values())
         threshold = self.configuration.get('conf_threshold', 0.5)
@@ -370,14 +370,14 @@ class ModelAdapter(dl.BaseModelAdapter):
         return collection
 
     def convert_from_dtlpy(self, data_path, **kwargs):
-        """ Convert Dataloop structure data to model structured
+        """ Convert DDOE structure data to model structured
 
             Virtual method - need to implement
 
             e.g. take dlp dir structure and construct annotation file
 
         :param data_path: `str` local File System directory path where
-                           we already downloaded the data from dataloop platform
+                           we already downloaded the data from DDOE platform
         :return:
         """
 

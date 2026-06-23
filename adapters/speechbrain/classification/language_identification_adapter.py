@@ -16,7 +16,7 @@ logger = logging.getLogger('LanguageClassifier-adapter')
 class LanguageClassifierAdapter(dl.BaseModelAdapter):
     """
     SpeechBrain Encoder Classifier Model adapter using Pytorch.
-    The class bind Dataloop model and model entities with model code implementation
+    The class bind DDOE model and model entities with model code implementation
     """
 
     def __init__(self, model_entity: dl.Model):

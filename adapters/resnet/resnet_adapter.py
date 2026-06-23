@@ -22,7 +22,7 @@ logger = logging.getLogger('resnet-adapter')
 class ModelAdapter(dl.BaseModelAdapter):
     """
     ResNet Model adapter using pytorch.
-    The class binds Dataloop model and model entities with model code implementation
+    The class binds DDOE model and model entities with model code implementation
     """
 
     def load(self, local_path, **kwargs):
@@ -401,14 +401,14 @@ class ModelAdapter(dl.BaseModelAdapter):
         return batch_tensor
 
     def convert_from_dtlpy(self, data_path, **kwargs):
-        """ Convert Dataloop structure data to model structured
+        """ Convert DDOE structure data to model structured
 
             Virtual method - need to implement
 
             e.g. take dlp dir structure and construct annotation file
 
         :param data_path: `str` local File System directory path where
-                           we already downloaded the data from dataloop platform
+                           we already downloaded the data from DDOE platform
         :return:
         """
 
